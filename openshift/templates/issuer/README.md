@@ -39,7 +39,7 @@ Une fois que tous les pods sont démarrés, vous pouvez accéder à l'agent à l
 | **POSTGRESQL_PASSWORD** | Mot de passe de l'utilisateur PostgreSQL. | {auto-généré} |
 | **POSTGRESQL_ADMIN_PASSWORD** | Mot de passe de l'utilisateur administrateur PostgreSQL. | {auto-généré} |
 | **POSTGRESQL_DATABASE_NAME** | Nom de la base de données de l'agent. | wallet |
-| **POSTGRESQL_PORT** | Numéro de port sur lequel PostgreSQL écoute. | 5432 |
+| **POSTGRESQL_PORT** | Port sur lequel PostgreSQL écoute. | 5432 |
 | **WALLET_STORAGE_TYPE** | Le type de stockage du portefeuille. Les valeurs possibles sont 'postgres_storage' ou 'sqlite_storage' pour le moment. | postgres_storage |
 | **AGENT_ADMIN_PORT** | Numéro de port sur lequel l'agent écoute pour servir l'API d'administration. | 3000 |
 | **WALLET_ENCRYPTION_KEY** | Clé de chiffrement è utiliser pour encrypter le portefeuille de l'agent. | {auto-généré} |
@@ -47,19 +47,21 @@ Une fois que tous les pods sont démarrés, vous pouvez accéder à l'agent à l
 | **WALLET_TYPE** | Le type de portfeuille. Les types internes pris en charge sont "basic", "indy" et "askar". | askar |
 | **WALLET_STORAGE_CONFIG** | Configuration du stockage du portfeuille. |  |
 | **WALLET_STORAGE_CREDS** | Les identifiants de stockage du portefeuille. |  |
-
-
-| **POSTGRESQL_VOLUME_SIZE** | Capacité du volume persistant PostgreSQL. | 1Gi |
-| **NESTJS_NAME** |  Nom assigné à tous les objets NestJs déployés par le gabarit. | nestjs-backend |
-| **ANGULAR_NAME** |  Nom assigné à tous les objets Angular déployés par le gabarit. | angular-frontend |
-| **KEYCLOAK_SUBDOMAIN** | Le nom de sous domaine pour accéder à Keycloak. | ssi-studio-keycloak |
-| **KEYCLOAK_ADMIN_USER** | Nom d'utilisateur de l'administrateur Keycloak. | admin |
-| **KEYCLOAK_ADMIN_PASSWORD** | Mot de passe de l'utilisateur administrateur Keycloak. | {auto-généré} |
-| **KEYCLOAK_REALM** | Nom du domain keycloak de l'application | SSI-Studio |
-| **KEYCLOAK_CLIENT_ID** |  Nom assigné à tous les objets NestJs déployés par le gabarit. | angular-app |
-| **KEYCLOAK_DATABASE_NAME** | Nom de la base de données de Keycloak. | keycloak |
-| **GITHUB_REPOSITORY_URI** | Uri du dépôt de code de l'application. | https://github.com/CQEN-QDCE/ssi-studio.git |
+| **ACAPY_NAME** | Nom attribué à tous les objets de l'agent ACA-Py définis dans ce modèle. | acapy |
+| **ACAPY_LABEL** | Les identifiants de stockage du portefeuille. | Libellé de l'agant. |
+| **ACAPY_IMAGE_URL** | L'URL de l'image pour l'agent. |  |
+| **AGENT_HTTP_PORT** | Port sur lequel l'agent écoute. |  |
+| **LOG_LEVEL** | Le niveau de journalisation de l'agent émetteur. | DEBUG |
+| **TAILS_SERVER_NAME** | Nom attribué à tous les objets du serveur de queues définis dans ce modèle. | tails-server |
+| **TAILS_SERVER_PORT** | Port sur lequel le serveur de queues écoute. | 6543 |
+| **AGENT_DID_SEED** | Valeur utilisée pour créer l'agent DID. |  |
+| **AGENT_DID** | Le DID public associé à l'agent. |  |
+| **GENESIS_FILE_URL** | L'URL à partir de laquelle le fichier genesis peut être téléchargé. |  |
 | **STORAGE_CLASS_NAME** | Nom de la classes de stockage utilisée par les volumes. | gp2 |
-| **NGINX_PORT** | Numéro de port sur lequel NGINX écoute. | 8080 |
-
-
+| **TAILS_SERVER_VOLUME_SIZE** | Capacité du volume persistant pour le server de queues. | 1Gi |
+| **POSTGRESQL_VOLUME_SIZE** | Capacité du volume persistant de la base de données PostgreSQL. | 1Gi |
+| **ROUTE_TIMEOUT** | Le délai d'attente pour la route de l'application.  Lorsque ce délai est dépassé, la route de l'application répondra par une erreur 504 Gateway Timeout. | 120s |
+| **CPU_REQUEST** | La demande de ressources CPU (en cœurs) pour ce build. | 100m |
+| **CPU_LIMIT** | La limite de ressources CPU (en cœurs) pour cette construction. | 250m |
+| **MEMORY_REQUEST** | Les ressources que la mémoire demande (en Mi, Gi, etc.) pour cette construction. | 128Mi |
+| **MEMORY_LIMIT** | La limite de mémoire des ressources (en Mi, Gi, etc.) pour cette construction. | 256Mi |
