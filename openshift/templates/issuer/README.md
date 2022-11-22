@@ -4,8 +4,8 @@ Ce dépôt contient les instructions nécessaires pour déployer un agent émett
 
 | Gabarit  | Descripton |
 | -------- | ---------- |
-| [ssi-studio.yaml](https://github.com/CQEN-QDCE/ssi-studio/blob/master/openshift/templates/ssi-studio.yaml) | Installation de l'application. |
-| [ssi-studio.dev.params](https://github.com/CQEN-QDCE/ssi-studio/blob/master/openshift/templates/ssi-studio.dev.params) | Paramètres pour un environnement de développement. |
+| [aries-issuer.yaml](https://github.com/CQEN-QDCE/aries-toolkit/blob/master/openshift/templates/issuer/aries-issuer.yaml) | Installation de l'application. |
+| [aries-issuer.candy-dev.params](https://github.com/CQEN-QDCE/aries-toolkit/blob/master/openshift/templates/issuer/aries-issuer.candy-dev.params) | Paramètres pour un environnement de développement. |
 
 ## Paramètres du gabarit
 
@@ -15,14 +15,14 @@ Le fichier de paramètres permet la personnalisation de l'installation pour un e
 
 Commencer par créer un projet sur OpenShift:
 ```bash
-oc new-project ssi-studio
+oc new-project aries-toolkit
 ```
 Lancez l'installation sur OpenShift
 ```bash
-oc process -f ./ssi-studio.yaml --param-file=./ssi-studio.dev.params | oc apply -f -
+oc process -f ./aries-toolkit.yaml --param-file=./aries-toolkit.dev.params | oc apply -f -
 ```
 
-Une fois que tous les pods sont démarrés, vous pouvez accéder à l'application à l'adresse https://ssi-studio.<APP_DOMAIN>.
+Une fois que tous les pods sont démarrés, vous pouvez accéder à l'agent à l'adresse https://aries-issuer.<APP_DOMAIN>.
 
 | Paramètre | Description | Défaut      |
 | --------- | ----------- | ----------- |
