@@ -745,7 +745,7 @@ parameters:
   displayName: PostgreSQL name
   description: The name assigned to all PostgreSQL objects defined in this template.
   required: true
-  value: 'postgresql'
+  value: 'postgres'
 - name: POSTGRESQL_PASSWORD
   displayName: PostgreSQL connection password
   description: Password for the PostgreSQL connection user. Needs to be basee64 encoded.
