@@ -19,7 +19,7 @@ oc new-project aries-toolkit
 ```
 Lancez l'installation sur OpenShift
 ```bash
-oc process -f ./aries-toolkit.yaml --param-file=./aries-toolkit.dev.params | oc apply -f -
+oc process -f ./aries-issuer.yaml --param-file=./aries-issuer.candy-dev.params | oc apply -f -
 ```
 
 Une fois que tous les pods sont démarrés, vous pouvez accéder à l'agent à l'adresse https://aries-issuer.<APP_DOMAIN>.
