@@ -48,7 +48,7 @@ Une fois que tous les pods sont démarrés, vous pouvez accéder à l'agent à l
 | **WALLET_STORAGE_CONFIG** | Configuration du stockage du portfeuille. |  |
 | **WALLET_STORAGE_CREDS** | Les identifiants de stockage du portefeuille. |  |
 | **ACAPY_NAME** | Nom attribué à tous les objets de l'agent ACA-Py définis dans ce modèle. | acapy |
-| **ACAPY_LABEL** | Les identifiants de stockage du portefeuille. | Libellé de l'agant. |
+| **ACAPY_LABEL** | Libellé de l'agent. | Aries issuer |
 | **ACAPY_IMAGE_URL** | L'URL de l'image pour l'agent. |  |
 | **AGENT_HTTP_PORT** | Port sur lequel l'agent écoute. |  |
 | **LOG_LEVEL** | Le niveau de journalisation de l'agent émetteur. | DEBUG |
