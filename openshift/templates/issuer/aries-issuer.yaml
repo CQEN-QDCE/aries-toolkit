@@ -702,7 +702,7 @@ parameters:
   displayName: Environment TAG name
   description: The TAG name for this environment, e.g., dev, test, prod.
   required: true
-  value: 'dev'
+  value: 'development'
 - name: APP_NAME
   displayName: Application name
   description: Used to group components together in the OpenShift console.
@@ -712,7 +712,7 @@ parameters:
   displayName: App Group
   description: Used to group components together.
   required: true
-  value: 'issuer-kit-agent'
+  value: 'aries-issuer'
 - name: SUFFIX
   displayName: Suffix
   description: A suffix applied to all the objects in this template.
@@ -725,9 +725,7 @@ parameters:
   value: 'agent'
 - name: API_ROLE
   displayName: Agent Role
-  description:
-    The role of the api service within the application - used for Network
-    Policies
+  description: The role of the api service within the application - used for Network Policies
   required: true
   value: 'api'
 - name: APP_DOMAIN
@@ -745,7 +743,7 @@ parameters:
   displayName: PostgreSQL name
   description: The name assigned to all PostgreSQL objects defined in this template.
   required: true
-  value: 'postgres'
+  value: 'postgres-database'
 - name: POSTGRESQL_PASSWORD
   displayName: PostgreSQL connection password
   description: Password for the PostgreSQL connection user. Needs to be basee64 encoded.
@@ -762,12 +760,7 @@ parameters:
   displayName: PostgreSQL database name
   description: Name of the PostgreSQL database.
   required: true
-  value: 'postgres'
-- name: POSTGRESQL_HOST
-  displayName: PostgreSql hostname
-  required: true
-  description: Hostname of the deployed PostgreSql database. Only used when WALLET_STORAGE_TYPE = postgres_storage.
-  value: 'postgres'
+  value: 'wallet'
 - name: POSTGRESQL_PORT
   displayName: PostgreSql key management service port
   required: true
@@ -816,10 +809,10 @@ parameters:
   displayName: ACA-Py name
   description: The name assigned to all ACA-Py objects defined in this template.
   required: true
-  value: 'acapy'
+  value: 'acapy-agent'
 - name: ACAPY_LABEL
   displayName: ACA-Py label
-  description: Label for the agent.
+  description: Label of the agent.
   required: true
   value: 'Aries issuer'
 - name: ACAPY_IMAGE_URL
