@@ -1,6 +1,6 @@
-# Déploiement Aries Issuer sur OpenShift
+# Déployer un agent émetteur Aries sur OpenShift
 
-Ce dépôt contient les instructions nécessaires pour déployer un agent émetteur Aries sur OpenShift.
+Ce dépôt contient les instructions nécessaires pour déployer un agent émetteur Aries sur OpenShift. L'agent supporte la révocation.
 
 | Gabarit  | Descripton |
 | -------- | ---------- |
