@@ -4,7 +4,7 @@ Ce dépôt contient les instructions nécessaires pour déployer un agent émett
 
 | Gabarit  | Descripton |
 | -------- | ---------- |
-| [aries-issuer.yaml](https://github.com/CQEN-QDCE/aries-toolkit/blob/master/openshift/templates/issuer/aries-issuer.yaml) | Installation de l'application. |
+| [aries-issuer.yaml](https://github.com/CQEN-QDCE/aries-toolkit/blob/master/openshift/templates/issuer/aries-issuer.yaml) | Installation de l'agent. |
 | [aries-issuer.candy-dev.params](https://github.com/CQEN-QDCE/aries-toolkit/blob/master/openshift/templates/issuer/aries-issuer.candy-dev.params) | Paramètres pour un environnement de développement. |
 
 ## Paramètres du gabarit

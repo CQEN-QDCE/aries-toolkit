@@ -2,37 +2,44 @@
 kind: Template
 apiVersion: template.openshift.io/v1
 metadata:
-  name: aca-py-mediator
+  name: ${APP_NAME}
   annotations:
-    description: Aries mediator agent based on Aries Cloud Agent Python (ACA-Py).
+    description: Agent médiateur Aries basé sur Aries Cloud Agent Python (ACA-Py).
 objects:
 ######################################################################
-# Database
+# Database PostgreSQL
 ######################################################################
 - kind: PersistentVolumeClaim
   apiVersion: v1
   metadata:
-    name: postgres-data
+    name: ${POSTGRESQL_NAME}-files
   spec:
-    storageClassName: ocs-storagecluster-cephfs
+    storageClassName: ${STORAGE_CLASS_NAME}
     accessModes:
     - ReadWriteOnce
     resources:
       requests:
-        storage: 1Gi
+        storage: ${POSTGRESQL_VOLUME_SIZE}
 - kind: Service
   apiVersion: v1
   metadata:
-    name: postgres
+    name: ${POSTGRESQL_NAME}
+    labels:    
+      name: ${POSTGRESQL_NAME}
+      app: ${APP_NAME}${SUFFIX}
+      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app-group: ${APP_GROUP}
+      role: ${POSTGRESQL_ROLE}
+      env: ${ENV_NAME}
   spec:
     ports:
-    - name: postgres
+    - name: ${POSTGRESQL_NAME}
       protocol: TCP
       port: ${{POSTGRESQL_PORT}}
       targetPort: ${{POSTGRESQL_PORT}}
       nodePort: 0
     selector:
-      name: postgres
+      name: ${POSTGRESQL_NAME}
     type: ClusterIP
     sessionAffinity: None
   status:
@@ -40,11 +47,16 @@ objects:
 - kind: DeploymentConfig
   apiVersion: v1
   metadata:
-    name: postgres
+    name: ${POSTGRESQL_NAME}
     annotations:
       template.alpha.openshift.io/wait-for-ready: 'true'
     labels:
-      app: postgres
+      name: ${POSTGRESQL_NAME}
+      app: ${APP_NAME}${SUFFIX}
+      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app-group: ${APP_GROUP}
+      role: ${POSTGRESQL_ROLE}
+      env: ${ENV_NAME}
   spec:
     strategy:
       type: Recreate
@@ -53,7 +65,7 @@ objects:
       imageChangeParams:
         automatic: true
         containerNames:
-        - postgres
+        - ${POSTGRESQL_NAME}
         from:
           kind: ImageStreamTag
           name: postgresql:latest
@@ -62,14 +74,14 @@ objects:
     - type: ConfigChange
     replicas: 1
     selector:
-      name: postgres
+      name: ${POSTGRESQL_NAME}
     template:
       metadata:
         labels:
-          name: postgres
+          name: ${POSTGRESQL_NAME}
       spec:
         containers:
-        - name: postgres
+        - name: ${POSTGRESQL_NAME}
           image: " "
           ports:
           - containerPort: ${{POSTGRESQL_PORT}}
@@ -91,25 +103,25 @@ objects:
           - name: POSTGRESQL_USER
             valueFrom:
               secretKeyRef:
-                name: postgres
+                name: ${POSTGRESQL_NAME}
                 key: database-user
           - name: POSTGRESQL_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: postgres
+                name: ${POSTGRESQL_NAME}
                 key: database-password
           - name: POSTGRESQL_DATABASE
             valueFrom:
               secretKeyRef:
-                name: postgres
+                name: ${POSTGRESQL_NAME}
                 key: database-name
           - name: POSTGRESQL_ADMIN_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: postgres
+                name: ${POSTGRESQL_NAME}
                 key: database-admin-password                
           volumeMounts:
-          - name: postgres-data
+          - name: ${POSTGRESQL_NAME}-files
             mountPath: "/var/lib/pgsql/data"
           terminationMessagePath: "/dev/termination-log"
           imagePullPolicy: IfNotPresent
@@ -118,9 +130,9 @@ objects:
             capabilities: {}
             privileged: false
         volumes:
-        - name: postgres-data
+        - name: ${POSTGRESQL_NAME}-files
           persistentVolumeClaim:
-            claimName: postgres-data
+            claimName: ${POSTGRESQL_NAME}-files
         restartPolicy: Always
         dnsPolicy: ClusterFirst
   status: {}
@@ -130,22 +142,41 @@ objects:
 - kind: DeploymentConfig
   apiVersion: v1
   metadata:
-    name: aca-py-mediator
+    name: ${ACAPY_NAME}
     labels:
-      app: aca-py-mediator
+      name: ${ACAPY_NAME}
+      app: ${APP_NAME}${SUFFIX}
+      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app-group: ${APP_GROUP}
+      role: ${ACAPY_ROLE}
+      env: ${ENV_NAME}
+    annotations:
+      description: Defines how to deploy the application server
+      app.openshift.io/connects-to: >-
+        [{"apiVersion":"apps.openshift.io/v1","kind":"DeploymentConfig","name":"${POSTGRESQL_NAME}"}]
   spec:
     strategy:
       type: Recreate
     replicas: 1
     selector:
-      name: aca-py-mediator
+      name: ${ACAPY_NAME}
     template:
       metadata:
         labels:
-          name: aca-py-mediator
+          name: ${ACAPY_NAME}
+          app: ${APP_NAME}${SUFFIX}
+          app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+          app-group: ${APP_GROUP}
+          role: ${ACAPY_ROLE}
+          env: ${ENV_NAME}
+        annotations:
+          description: Defines how to deploy the application server
+          app.openshift.io/connects-to: >-
+            [{"apiVersion":"apps.openshift.io/v1","kind":"DeploymentConfig","name":"${POSTGRESQL_NAME}"},
+            {"apiVersion":"apps.openshift.io/v1","kind":"DeploymentConfig","name":"${CADDY_NAME}"}]
       spec:
         containers:
-          - name: aca-py-mediator
+          - name: ${ACAPY_NAME}
             command:
               - bash
               - -c
@@ -155,27 +186,33 @@ objects:
                 --outbound-transport http
                 --outbound-transport ws
                 --admin 0.0.0.0 ${ADMIN_INTERFACE_PORT}
-                --endpoint https://${ROUTE_SUBDOMAIN}.${ROUTE_HOSTNAME} wss://${ROUTE_SUBDOMAIN}.${ROUTE_HOSTNAME}
+                --endpoint https://${AGENT_SUBDOMAIN}.${APP_DOMAIN} wss://${AGENT_SUBDOMAIN}.${APP_DOMAIN}
                 --no-ledger
                 --open-mediation
                 --enable-undelivered-queue
                 --debug-connections
-                --auto-accept-invites
                 --auto-accept-requests
                 --auto-ping-connection
                 --connections-invite
                 --invite-multi-use
                 --auto-provision
-                --wallet-type 'indy'
+                --wallet-type '${WALLET_TYPE}'
                 --wallet-name "$(echo ${WALLET_NAME} | tr '[:upper:]' '[:lower:]' | sed "s~-~_~g")"
-                --wallet-key "${MASTER_KEY}"
+                --wallet-key "${WALLET_ENCRYPTION_KEY}"
                 --wallet-storage-type "${WALLET_STORAGE_TYPE}"
                 --wallet-storage-config "$(eval echo \"${WALLET_STORAGE_CONFIGURATION}\")"
                 --wallet-storage-creds "$(eval echo \"${WALLET_STORAGE_CREDENTIALS}\")"
                 $([ ! -z "${AGENT_ADMIN_API_KEY}" ] && echo "--admin-api-key ${AGENT_ADMIN_API_KEY}" || echo "--admin-insecure-mode")
-                --label '${AGENT_LABEL}'
                 --log-level ${AGENT_LOG_LEVEL});
             env:
+              - name: ACAPY_LABEL
+                value: ${ACAPY_LABEL}
+              - name: ACAPY_IMAGE_URL
+                value: ${ACAPY_IMAGE_URL}               
+              - name: ACAPY_AUTO_ACCEPT_INVITES
+                value: ${ACAPY_AUTO_ACCEPT_INVITES}
+              - name: POSTGRESQL_NAME
+                value: ${POSTGRESQL_NAME}
               - name: WALLET_NAME
                 value: aca-py-mediator
               - name: WALLET_STORAGE_TYPE
@@ -184,34 +221,32 @@ objects:
                 value: ${WALLET_STORAGE_CONFIG}
               - name: WALLET_STORAGE_CREDENTIALS
                 value: ${WALLET_STORAGE_CREDS}
-              - name: POSTGRESQL_HOST
-                value: ${POSTGRESQL_HOST}
               - name: POSTGRESQL_PORT
                 value: ${POSTGRESQL_PORT}
               - name: POSTGRESQL_USER
                 valueFrom:
                   secretKeyRef:
-                    name: postgres
+                    name: ${POSTGRESQL_NAME}
                     key: database-user
-              - name: POSTGRESQL_KMS_PASSWORD
+              - name: POSTGRESQL_PASSWORD
                 valueFrom:
                   secretKeyRef:
-                    name: postgres
+                    name: ${POSTGRESQL_NAME}
                     key: database-password
-              - name: POSTGRESQL_KMS_ADMIN_USER
+              - name: POSTGRESQL_ADMIN_USER
                 valueFrom:
                   secretKeyRef:
-                    name: postgres
+                    name: ${POSTGRESQL_NAME}
                     key: database-admin-user
-              - name: POSTGRESQL_KMS_ADMIN_PASSWORD
+              - name: POSTGRESQL_ADMIN_PASSWORD
                 valueFrom:
                   secretKeyRef:
-                    name: postgres
+                    name: ${POSTGRESQL_NAME}
                     key: database-admin-password
-              - name: MASTER_KEY
+              - name: WALLET_ENCRYPTION_KEY
                 valueFrom:
                   secretKeyRef:
-                    name: aca-py-mediator
+                    name: ${ACAPY_NAME}
                     key: master-key
               - name: HTTP_INTERFACE_PORT
                 value: ${AGENT_HTTP_PORT}
@@ -222,13 +257,13 @@ objects:
               - name: AGENT_ADMIN_API_KEY
                 valueFrom:
                   secretKeyRef:
-                    name: aca-py-mediator
+                    name: ${ACAPY_NAME}
                     key: admin-api-key
-              - name: AGENT_LABEL
-                value: ${AGENT_LABEL}
+              - name: ACAPY_LABEL
+                value: ${ACAPY_LABEL}
               - name: AGENT_LOG_LEVEL
                 value: ${LOG_LEVEL}
-            image: "bcgovimages/aries-cloudagent:py36-1.16-1_0.7.3"
+            image: "bcgovimages/aries-cloudagent:py36-1.16-1_0.7.5"
             ports:
               - containerPort: ${{AGENT_ADMIN_PORT}}
                 protocol: TCP
@@ -244,7 +279,7 @@ objects:
         - name: init-db
           image: busybox
           command: ['sh', '-c']
-          args: ["until nc -z postgres:\"${POSTGRESQL_PORT}\"; do echo waiting for db; sleep 2; done;"]
+          args: ["until nc -z ${POSTGRESQL_NAME}:\"${POSTGRESQL_PORT}\"; do echo waiting for db; sleep 2; done;"]
         restartPolicy: Always
         terminationGracePeriodSeconds: 30
         dnsPolicy: ClusterFirst
@@ -253,12 +288,17 @@ objects:
 - kind: Service
   apiVersion: v1
   metadata:
-    name: aca-py-mediator
+    name: ${ACAPY_NAME}
     labels:
-      name: aca-py-mediator
+      name: ${ACAPY_NAME}
+      app: ${APP_NAME}${SUFFIX}
+      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app-group: ${APP_GROUP}
+      role: ${ACAPY_ROLE}
+      env: ${ENV_NAME}
   spec:
     selector:
-      name: aca-py-mediator
+      name: ${ACAPY_NAME}
     ports:
       - name: '3000'
         protocol: TCP
@@ -275,37 +315,37 @@ objects:
 - kind: Route
   apiVersion: v1
   metadata:
-    name: aries-mediator
+    name: ${ACAPY_NAME}
   spec:
-    host: ${ROUTE_SUBDOMAIN}.${ROUTE_HOSTNAME}
+    host: ${AGENT_SUBDOMAIN}.${APP_DOMAIN}
     to:
       kind: Service
-      name: caddy
+      name: ${CADDY_NAME}
       weight: 100
     port:
-      targetPort: 80
+      targetPort: ${{CADDY_HTTP_PORT}}
     tls:
       termination: edge
       insecureEdgeTerminationPolicy: None
     wildcardPolicy: None
   status:
     ingress:
-      - host: ${ROUTE_SUBDOMAIN}.${ROUTE_HOSTNAME}
+      - host: ${AGENT_SUBDOMAIN}.${APP_DOMAIN}
         routerName: default
         conditions:
           - type: Admitted
             status: 'True'
         wildcardPolicy: None
-        routerCanonicalHostname: ${ROUTE_HOSTNAME}
+        routerCanonicalHostname: ${APP_DOMAIN}
 - kind: Route
   apiVersion: v1
   metadata:
-    name: aries-mediator-admin
+    name: ${ACAPY_NAME}-admin
   spec:
-    host: ${ROUTE_SUBDOMAIN}-admin.${ROUTE_HOSTNAME}
+    host: ${AGENT_SUBDOMAIN}-admin.${APP_DOMAIN}
     to:
       kind: Service
-      name: aca-py-mediator
+      name: ${ACAPY_NAME}
       weight: 100
     port:
       targetPort: ${{AGENT_ADMIN_PORT}}
@@ -315,15 +355,15 @@ objects:
     wildcardPolicy: None
   status:
     ingress:
-      - host: ${ROUTE_SUBDOMAIN}-admin.${ROUTE_HOSTNAME}
+      - host: ${AGENT_SUBDOMAIN}-admin.${APP_DOMAIN}
         routerName: default
         conditions:
           - type: Admitted
             status: 'True'
         wildcardPolicy: None
-        routerCanonicalHostname: ${ROUTE_HOSTNAME}
+        routerCanonicalHostname: ${APP_DOMAIN}
 ######################################################################
-# Caddy
+# Caddy Reverse Proxy
 ######################################################################
 - kind: ConfigMap
   apiVersion: v1
@@ -340,10 +380,10 @@ objects:
                            }\n\n\t
                            # Handle any traffic that matches the `@websockets` pattern\n\t
                            handle @websockets {\n\t\t
-                               reverse_proxy http://aca-py-mediator:${AGENT_WS_PORT}\n\t
+                               reverse_proxy http://${ACAPY_NAME}:${AGENT_WS_PORT}\n\t
                            }\n\n\t
                            # Handle all other traffic.\n\t
-                               handle {\n\t\treverse_proxy http://aca-py-mediator:${AGENT_HTTP_PORT}\n\t
+                               handle {\n\t\treverse_proxy http://${ACAPY_NAME}:${AGENT_HTTP_PORT}\n\t
                            }\n\n\t
                            # What logs should look like.\n\t
                            log {\n\t\t
@@ -355,24 +395,32 @@ objects:
 - kind: DeploymentConfig
   apiVersion: v1
   metadata:
-    name: caddy
+    name: ${CADDY_NAME}
     annotations:
+      description: Defines how to deploy the application server
       template.alpha.openshift.io/wait-for-ready: 'true'
+      app.openshift.io/connects-to: >-
+        [{"apiVersion":"apps.openshift.io/v1","kind":"DeploymentConfig","name":"${ACAPY_NAME}"}]
     labels:
-      app: caddy
+      name: ${CADDY_NAME}
+      app: ${APP_NAME}${SUFFIX}
+      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app-group: ${APP_GROUP}
+      role: ${CADDY_ROLE}
+      env: ${ENV_NAME}
   spec:
     strategy:
       type: Recreate
     replicas: 1
     selector:
-      name: caddy
+      name: ${CADDY_NAME}
     template:
       metadata:
         labels:
-          name: caddy
+          name: ${CADDY_NAME}
       spec:
         containers:
-        - image: caddy
+        - image: caddy:latest
           ports:
             - containerPort: 80
               protocol: TCP
@@ -384,20 +432,20 @@ objects:
           livenessProbe:
             exec:
               command:
-              - nc -zv localhost:2019 || exit -1
+              - nc -zv ${CADDY_NAME}:2019 || exit -1
             failureThreshold: 5
             periodSeconds: 3
             timeoutSeconds: 3
-          name: caddy
+          name: ${CADDY_NAME}
           volumeMounts:
           - mountPath: /etc/caddy
             name: caddy-file
-        hostname: caddy
+        hostname: ${CADDY_NAME}
         initContainers:
         - name: init-db
           image: busybox
           command: ['sh', '-c']
-          args: ["until nc -z aca-py-mediator:\"${AGENT_HTTP_PORT}\"; do echo waiting for db; sleep 2; done;"]
+          args: ["until nc -z ${ACAPY_NAME}:\"${AGENT_HTTP_PORT}\"; do echo waiting for db; sleep 2; done;"]
         restartPolicy: Always
         serviceAccountName: ""
         volumes:
@@ -408,20 +456,25 @@ objects:
 - kind: Service
   apiVersion: v1
   metadata:
-    name: caddy
+    name: ${CADDY_NAME}
     labels:
-      name: caddy
+      name: ${CADDY_NAME}
+      app: ${APP_NAME}${SUFFIX}
+      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app-group: ${APP_GROUP}
+      role: ${CADDY_ROLE}
+      env: ${ENV_NAME}
   spec:
     selector:
-      name: caddy
+      name: ${CADDY_NAME}
     ports:
       - name: '80'
         protocol: TCP
-        port: 80
+        port: ${{CADDY_HTTP_PORT}}
         targetPort: 2015
       - name: '443'
         protocol: TCP
-        port: 443
+        port: ${{CADDY_HTTPS_PORT}}
         targetPort: 433
       - name: '2019'
         protocol: TCP
@@ -433,7 +486,7 @@ objects:
 - kind: Secret
   apiVersion: v1
   metadata:
-    name: postgres
+    name: ${POSTGRESQL_NAME}
     annotations:
       template.openshift.io/expose-database-user: "{.data['database-user']}"
       template.openshift.io/expose-database-password: "{.data['database-password']}"
@@ -449,24 +502,54 @@ objects:
 - kind: Secret
   apiVersion: v1
   metadata:
-    name: aca-py-mediator
+    name: ${ACAPY_NAME}
     annotations:
       template.openshift.io/expose-master-key: "{.data['master-key']}"
       template.openshift.io/expose-admin-api-key: "{.data['admin-api-key']}"
   stringData:
-    master-key: "${MASTER_KEY}"
+    master-key: "${WALLET_ENCRYPTION_KEY}"
     admin-api-key: ${ADMIN_API_KEY}
 ######################################################################
 # Parameters
 ######################################################################
 parameters:
-- name: ROUTE_HOSTNAME
-  description: The external hostname to access Aries mediator.
+- name: ENV_NAME
+  displayName: Environment TAG name
+  description: The TAG name for this environment, e.g., dev, test, prod.
   required: true
-- name: ROUTE_SUBDOMAIN
+  value: 'development'
+- name: APP_NAME
+  displayName: Application name
+  description: Used to group components together in the OpenShift console.
+  required: true
+  value: 'aries-mediator'
+- name: APP_GROUP
+  displayName: App Group
+  description: Used to group components together.
+  required: true
+  value: 'aries-mediator'
+- name: SUFFIX
+  displayName: Suffix
+  description: A suffix applied to all the objects in this template.
+  required: false
+  value: ''
+- name: APP_DOMAIN
+  description: The exposed hostname that will route to the public agent endpoint.
+  required: true
+- name: AGENT_SUBDOMAIN
   description: The external subdomain to access Aries mediator.
   required: true
-  value: "aries-mediator"
+  value: 'aries-mediator'
+- name: POSTGRESQL_NAME
+  displayName: PostgreSQL name
+  description: The name assigned to all PostgreSQL objects defined in this template.
+  required: true
+  value: 'postgres-database'
+- name: POSTGRESQL_ROLE
+  displayName: PostgreSql Role
+  description: The role of PostgreSql within the application - used for Network Policies
+  required: true
+  value: 'database'
 - name: POSTGRESQL_PASSWORD
   displayName: PostgreSQL connection password
   description: Password for the PostgreSQL connection user. Needs to be basee64 encoded.
@@ -483,17 +566,41 @@ parameters:
   displayName: PostgreSQL database name
   description: Name of the PostgreSQL database.
   required: true
-  value: "kms"
-- name: POSTGRESQL_HOST
-  displayName: PostgreSql hostname
-  required: true
-  description: Hostname of the deployed PostgreSql database. Only used when WALLET_STORAGE_TYPE = postgres_storage.
-  value: postgres
+  value: "wallet"
 - name: POSTGRESQL_PORT
   displayName: PostgreSql key management service port
   required: true
   description: The port number of the deployed PostgreSql database. Only used when WALLET_STORAGE_TYPE = postgres_storage.
   value: "5432"
+- name: POSTGRESQL_VOLUME_SIZE
+  displayName: PostgreSql volume size
+  description: The size of the PostgreSql persistent volume, e.g. 512Mi, 1Gi, 2Gi.
+  required: true
+  value: 1Gi
+- name: ACAPY_NAME
+  displayName: ACA-Py name
+  description: The name assigned to all ACA-Py objects defined in this template.
+  required: true
+  value: "aca-py-agent"
+- name: ACAPY_ROLE
+  displayName: ACA-Py role
+  description: The role of ACA-Py within the application - used for Network Policies.
+  required: true
+  value: 'aries-mediator-agent'
+- name: ACAPY_LABEL
+  displayName: ACA-Py label
+  description: Label of the agent.
+  required: true
+  value: 'Aries mediator'
+- name: ACAPY_AUTO_ACCEPT_INVITES
+  displayName: ACAPy auto accept invites
+  description: ACAPY_AUTO_ACCEPT_INVITES
+  required: true
+  value: 'false'
+- name: ACAPY_IMAGE_URL
+  displayName: Agent Image URL
+  description: The URL of the image for the agent
+  required: false
 - name: WALLET_STORAGE_TYPE
   displayName: Wallet storage type
   description: The wallet storage type. Possible values are 'postgres_storage' or 'sqlite_storage' at the moment.  If not defined, defaults to 'sqlite_storage' for compatibility.
@@ -504,32 +611,30 @@ parameters:
   description: The port on which the mediator agent will listen for the admin API.
   required: true
   value: "3000"
-- name: MASTER_KEY
-  displayName: Master key
-  description: The encryption key to be used to encrypt the mediator agent wallet.
-  required: true
-  generate: "expression"
-  from: "[a-zA-Z0-9]{16}"
 - name: ADMIN_API_KEY
   displayName: Admin API key
   description: The key used to authenticate client requests to the admin api.
   required: false
   value: ""
+- name: WALLET_TYPE
+  displayName: Wallet type
+  description: The wallet type. Supported internal storage types are 'basic', 'indy', and 'askar'.
+  required: true
+  value: 'indy'
+- name: WALLET_ENCRYPTION_KEY
+  displayName: Wallet encryption key
+  description: The encryption key to be used to encrypt the agent wallet.
+  required: true
 - name: WALLET_STORAGE_CONFIG
   displayName: Wallet storage configuration
   required: true
   description: The wallet storage configuration.
-  value: '{\"url\":\"${POSTGRESQL_HOST}:${POSTGRESQL_PORT}\",\"max_connections\":5,\"wallet_scheme\":\"MultiWalletSingleTableSharedPool\"}'
+  value: '{\"url\":\"${POSTGRESQL_NAME}:${POSTGRESQL_PORT}\",\"max_connections\":5,\"wallet_scheme\":\"MultiWalletSingleTableSharedPool\"}'
 - name: WALLET_STORAGE_CREDS
   displayName: Wallet storage credentials
   required: true
   description: The wallet storage credentials.
-  value: '{\"account\":\"${POSTGRESQL_USER}\",\"password\":\"${POSTGRESQL_KMS_PASSWORD}\",\"admin_account\":\"${POSTGRESQL_KMS_ADMIN_USER}\",\"admin_password\":\"${POSTGRESQL_KMS_ADMIN_PASSWORD}\"}'
-- name: AGENT_LABEL
-  displayName: Agent label
-  description: Label for the mediator agent.
-  required: true
-  value: "aca-py-mediator"
+  value: '{\"account\":\"${POSTGRESQL_USER}\",\"password\":\"${POSTGRESQL_PASSWORD}\",\"admin_account\":\"${POSTGRESQL_ADMIN_USER}\",\"admin_password\":\"${POSTGRESQL_ADMIN_PASSWORD}\"}'
 - name: AGENT_HTTP_PORT
   displayName: Agent HTTP port
   description: The HTTP port on which the agent will listen.
@@ -545,3 +650,32 @@ parameters:
   description: The logging level of the mediator agent.
   required: true
   value: DEBUG
+- name: CADDY_NAME
+  displayName: Caddy name
+  description: The name assigned to all Caddy objects defined in this template.
+  required: true
+  value: "caddy-proxy"
+- name: CADDY_ROLE
+  displayName: Caddy role
+  description: The role of Caddy within the application - used for Network Policies.
+  required: true
+  value: 'reverse-proxy'
+- name: CADDY_HTTP_PORT
+  displayName: Caddy HTTP port
+  description: The HTTP port on which Caddy will listen.
+  required: true
+  value: "80"
+- name: CADDY_HTTPS_PORT
+  displayName: Caddy HTTPS port
+  description: The HTTPS port on which Caddy will listen.
+  required: true
+  value: "443"
+- name: CADDY_HTTP_DEFAULT_PORT
+  displayName: Caddy HTTP default port
+  description: The default HTTP port on which Caddy will listen.
+  required: true
+  value: "2015"
+- name: STORAGE_CLASS_NAME
+  displayNgp2iption: The storage class of the volume.
+  required: true
+  value: 'gp2'
