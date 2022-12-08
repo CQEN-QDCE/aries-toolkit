@@ -9,7 +9,15 @@ Ce dépôt contient les instructions nécessaires pour déployer un agent vérif
 
 ## Paramètres du gabarit
 
-Tous les paramètres du gabarit sont obligatoires. La plupart d'entre eux ont des valeurs par défaut, mais certains n'en ont pas. Ils doivent être fournis lors de l'instanciation avec 'oc process'.
+La majorité des paramètres du modèle sont obligatoires. La plupart d'entre eux ont des valeurs par défaut, mais certains n'en ont pas. Ils doivent être fournis lors de l'instanciation avec 'oc process'.
+
+```
+APP_DOMAIN=
+ACAPY_LABEL=
+WALLET_ENCRYPTION_KEY=
+GENESIS_FILE_URL=
+POSTGRESQL_PASSWORD=
+```
 
 Le fichier de paramètres permet la personnalisation de l'installation pour un environnement particulier (par exemple).
 
