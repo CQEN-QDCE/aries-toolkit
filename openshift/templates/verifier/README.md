@@ -2,12 +2,12 @@
 
 Ce dépôt contient les instructions nécessaires pour déployer un agent vérificateur Aries sur OpenShift.
 
-| Gabarit  | Descripton |
+| Modèle   | Descripton |
 | -------- | ---------- |
 | [aries-verifier.yaml](https://github.com/CQEN-QDCE/aries-toolkit/blob/master/openshift/templates/verifier/aries-verifier.yaml) | Installation de l'agent. |
 | [aries-verifier.candy-dev.params](https://github.com/CQEN-QDCE/aries-toolkit/blob/master/openshift/templates/verifier/aries-verifier.candy-dev.params) | Paramètres pour un environnement de développement. |
 
-## Paramètres du gabarit
+## Paramètres du modèle
 
 La majorité des paramètres du modèle sont obligatoires. La plupart d'entre eux ont des valeurs par défaut, mais certains n'en ont pas. Ils doivent être fournis lors de l'instanciation avec 'oc process'. Il est recommendé de créer un ou plusieurs fichiers de paramètres pour renseigner, au minimum, la valeur des paramètres obligatoires suivants (consulter le tableau pour en connaître la description):
 
