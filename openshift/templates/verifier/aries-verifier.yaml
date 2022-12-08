@@ -1,0 +1,704 @@
+kind: Template
+apiVersion: template.openshift.io/v1
+metadata:
+  name: ${APP_NAME}
+  annotations:
+    description: Agent vérificateur Aries basé sur Aries Cloud Agent Python (ACA-Py).
+objects:
+######################################################################
+# Database PostgreSQL
+######################################################################
+- kind: PersistentVolumeClaim
+  apiVersion: v1
+  metadata:
+    name: ${POSTGRESQL_NAME}-files
+    labels:
+      name: ${POSTGRESQL_NAME}-files
+      app: ${APP_NAME}${SUFFIX}
+      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app-group: ${APP_GROUP}
+      role: wallet
+      env: ${ENV_NAME}
+  spec:
+    storageClassName: ${STORAGE_CLASS_NAME}
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${POSTGRESQL_VOLUME_SIZE}
+
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: ${POSTGRESQL_NAME}
+    labels:
+      name: ${POSTGRESQL_NAME}
+      app: ${APP_NAME}${SUFFIX}
+      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app-group: ${APP_GROUP}
+      role: wallet
+      env: ${ENV_NAME}
+  spec:
+    ports:
+    - name: ${POSTGRESQL_NAME}
+      protocol: TCP
+      port: ${{POSTGRESQL_PORT}}
+      targetPort: ${{POSTGRESQL_PORT}}
+      nodePort: 0
+    selector:
+      name: ${POSTGRESQL_NAME}
+    type: ClusterIP
+    sessionAffinity: None
+  status:
+    loadBalancer: {}
+
+- kind: DeploymentConfig
+  apiVersion: v1
+  metadata:
+    name: ${POSTGRESQL_NAME}
+    annotations:
+      template.alpha.openshift.io/wait-for-ready: 'true'
+    labels:
+      name: ${POSTGRESQL_NAME}
+      app: ${APP_NAME}${SUFFIX}
+      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app-group: ${APP_GROUP}
+      role: wallet
+      env: ${ENV_NAME}
+  spec:
+    strategy:
+      type: Recreate
+    triggers:
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+        - ${POSTGRESQL_NAME}
+        from:
+          kind: ImageStreamTag
+          name: postgresql:latest
+          namespace: openshift
+        lastTriggeredImage: ''
+    - type: ConfigChange
+    replicas: 1
+    selector:
+      name: ${POSTGRESQL_NAME}
+    template:
+      metadata:
+        labels:
+          name: ${POSTGRESQL_NAME}
+      spec:
+        containers:
+        - name: ${POSTGRESQL_NAME}
+          image:
+          ports:
+          - containerPort: ${{POSTGRESQL_PORT}}
+            protocol: TCP
+          readinessProbe:
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+            exec:
+#              command:
+#                - /bin/sh
+#                - -i
+#                - -c
+#                - psql -h 127.0.0.1 -U $POSTGRESQL_USER -d $POSTGRESQL_DATABASE_NAME
+#                - psql -h 0.0.0.0 -U $POSTGRESQL_USER -d $POSTGRESQL_DATABASE_NAME
+#                - psql -w -U $POSTGRESQL_USER -d $POSTGRESQL_DATABASE_NAME
+#                  -c 'SELECT 1'
+#              command: ["psql", "-w", "-U", ${{POSTGRESQL_USER}}, "-d", ${{POSTGRESQL_DATABASE_NAME}}, "-c", "SELECT 1"]
+              command: ["psql", "-w", "-U", "dbuser", "-d", "postgres", "-c", "SELECT 1"]
+          livenessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 120
+            timeoutSeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          env:
+          - name: POSTGRESQL_USER
+            valueFrom:
+              secretKeyRef:
+                name: ${POSTGRESQL_NAME}
+                key: database-user
+          - name: POSTGRESQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${POSTGRESQL_NAME}
+                key: database-password
+          - name: POSTGRESQL_DATABASE
+            valueFrom:
+              secretKeyRef:
+                name: ${POSTGRESQL_NAME}
+                key: database-name
+          - name: POSTGRESQL_ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: ${POSTGRESQL_NAME}
+                key: database-admin-password                
+          volumeMounts:
+          - name: ${POSTGRESQL_NAME}-files
+            mountPath: "/var/lib/pgsql/data"
+          terminationMessagePath: "/dev/termination-log"
+          imagePullPolicy: IfNotPresent
+          capabilities: {}
+          securityContext:
+            capabilities: {}
+            privileged: false
+        volumes:
+        - name: ${POSTGRESQL_NAME}-files
+          persistentVolumeClaim:
+            claimName: ${POSTGRESQL_NAME}-files
+        restartPolicy: Always
+        dnsPolicy: ClusterFirst
+  status: {}
+
+######################################################################
+# ACA-py Issuer
+######################################################################
+- kind: NetworkPolicy
+  apiVersion: networking.k8s.io/v1
+  metadata:
+    name: ${ACAPY_NAME}-allow-ingress
+    labels:
+      name: ${ACAPY_NAME}-allow-ingress
+      app: ${APP_NAME}${SUFFIX}
+      app-group: ${APP_GROUP}
+      role: ${ROLE}
+      env: ${ENV_NAME}
+  spec:
+    description: |
+      Allow traffic from routes into the ${ROLE} container(s).
+    ingress:
+      - from:
+          - namespaceSelector:
+              matchLabels:
+                network.openshift.io/policy-group: ingress
+    podSelector:
+      matchLabels:
+        role: ${ROLE}
+        app: ${APP_NAME}${SUFFIX}
+        env: ${ENV_NAME}
+    policyTypes:
+      - Ingress
+
+- kind: NetworkPolicy
+  apiVersion: networking.k8s.io/v1
+  metadata:
+    name: ${ACAPY_NAME}
+    labels:
+      name: ${ACAPY_NAME}
+      app: ${APP_NAME}${SUFFIX}
+      app-group: ${APP_GROUP}
+      role: ${ROLE}
+      env: ${ENV_NAME}
+  spec:
+    description: |
+      Allow the API to access the agent admin interface.
+    ingress:
+      - from:
+          - podSelector:
+              matchLabels:
+                role: ${API_ROLE}
+                app: ${APP_NAME}${SUFFIX}
+                env: ${ENV_NAME}
+            namespaceSelector:
+              matchLabels:
+                environment: ${ENV_NAME}
+        ports:
+          - protocol: TCP
+            port: ${{AGENT_ADMIN_PORT}}
+    podSelector:
+      matchLabels:
+        role: ${ROLE}
+        app: ${APP_NAME}${SUFFIX}
+        env: ${ENV_NAME}
+
+- kind: DeploymentConfig
+  apiVersion: v1
+  metadata:
+    name: ${ACAPY_NAME}
+    labels:
+      name: ${ACAPY_NAME}
+      app: ${APP_NAME}${SUFFIX}
+      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app-group: ${APP_GROUP}
+      role: ${ROLE}
+      env: ${ENV_NAME}
+    annotations:
+      description: Defines how to deploy the application server
+      app.openshift.io/connects-to: >-
+        [{"apiVersion":"apps.openshift.io/v1","kind":"DeploymentConfig","name":"${POSTGRESQL_NAME}"}
+  spec:
+    strategy:
+      type: Recreate
+    replicas: 1
+    selector:
+      name: ${ACAPY_NAME}
+    template:
+      metadata:
+        name: ${ACAPY_NAME}
+        labels:
+          name: ${ACAPY_NAME}
+          app: ${APP_NAME}${SUFFIX}
+          app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+          app-group: ${APP_GROUP}
+          role: ${ROLE}
+          env: ${ENV_NAME}
+        annotations:
+          description: Defines how to deploy the ${ACAPY_NAME} server
+          app.openshift.io/connects-to: >-
+            [{"apiVersion":"apps.openshift.io/v1","kind":"DeploymentConfig","name":"${POSTGRESQL_NAME}"}]
+      spec:
+        containers:
+          - name: ${ACAPY_NAME}
+            command:
+              - bash
+              - -c
+              - $(echo aca-py start
+                --inbound-transport http '0.0.0.0' ${HTTP_INTERFACE_PORT}
+                --outbound-transport http
+                --admin 0.0.0.0 ${ADMIN_INTERFACE_PORT}
+                --endpoint https://${AGENT_SUBDOMAIN}.${APP_DOMAIN}
+                --genesis-url "${GENESIS_FILE_URL}"
+                --auto-accept-requests
+                --auto-respond-messages
+                --auto-respond-credential-proposal
+                --auto-respond-credential-offer
+                --auto-respond-credential-request
+                --auto-respond-presentation-proposal
+                --auto-respond-presentation-request
+                --auto-provision
+                --auto-store-credential
+                --wallet-type '${WALLET_TYPE}'
+                --wallet-name "$(echo ${WALLET_NAME} | tr '[:upper:]' '[:lower:]' | sed "s~-~_~g")"
+                --wallet-key "${WALLET_ENCRYPTION_KEY}"
+                --wallet-storage-type "${WALLET_STORAGE_TYPE}"
+                --wallet-storage-config "$(eval echo \"${WALLET_STORAGE_CONFIGURATION}\")"
+                --wallet-storage-creds "$(eval echo \"${WALLET_STORAGE_CREDENTIALS}\")"
+                $([ ! -z "${WEBHOOK_URL}" ] && echo "--webhook-url ${WEBHOOK_URL}" || echo "")
+                $([ ! -z "${AGENT_ADMIN_API_KEY}" ] && echo "--admin-api-key ${AGENT_ADMIN_API_KEY}" || echo "--admin-insecure-mode")
+                --log-level ${AGENT_LOG_LEVEL});
+            env:
+              - name: ACAPY_LABEL
+                value: ${ACAPY_LABEL}
+              - name: ACAPY_IMAGE_URL
+                value: ${ACAPY_IMAGE_URL}               
+              - name: ACAPY_AUTO_ACCEPT_INVITES
+                value: ${ACAPY_AUTO_ACCEPT_INVITES}
+              - name: GENESIS_FILE_URL
+                value: ${GENESIS_FILE_URL}
+              - name: WEBHOOK_URL
+                value: ${WEBHOOK_URL}
+              - name: WALLET_NAME
+                value: ${APP_NAME}
+              - name: WALLET_STORAGE_TYPE
+                value: ${WALLET_STORAGE_TYPE}
+              - name: WALLET_STORAGE_CONFIGURATION
+                value: ${WALLET_STORAGE_CONFIG}
+              - name: WALLET_STORAGE_CREDENTIALS
+                value: ${WALLET_STORAGE_CREDS}
+              - name: POSTGRESQL_NAME
+                value: ${POSTGRESQL_NAME}
+              - name: POSTGRESQL_PORT
+                value: ${POSTGRESQL_PORT}
+              - name: POSTGRESQL_USER
+                valueFrom:
+                  secretKeyRef:
+                    name: ${POSTGRESQL_NAME}
+                    key: database-user
+              - name: POSTGRESQL_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: ${POSTGRESQL_NAME}
+                    key: database-password
+              - name: POSTGRESQL_ADMIN_USER
+                valueFrom:
+                  secretKeyRef:
+                    name: ${POSTGRESQL_NAME}
+                    key: database-admin-user
+              - name: POSTGRESQL_ADMIN_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: ${POSTGRESQL_NAME}
+                    key: database-admin-password
+              - name: WALLET_ENCRYPTION_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: ${ACAPY_NAME}
+                    key: master-key
+              - name: HTTP_INTERFACE_PORT
+                value: ${AGENT_HTTP_PORT}
+              - name: ADMIN_INTERFACE_PORT
+                value: ${AGENT_ADMIN_PORT}
+              - name: AGENT_ADMIN_API_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: ${ACAPY_NAME}
+                    key: admin-api-key
+              - name: ACAPY_LABEL
+                value: ${ACAPY_LABEL}
+              - name: AGENT_LOG_LEVEL
+                value: ${LOG_LEVEL}
+            image: "bcgovimages/aries-cloudagent:py36-1.16-1_0.7.5"
+            ports:
+              - containerPort: ${{AGENT_ADMIN_PORT}}
+                protocol: TCP
+              - containerPort: ${{AGENT_HTTP_PORT}}
+                protocol: TCP
+            readinessProbe:
+              timeoutSeconds: 30
+              initialDelaySeconds: 3
+              exec:
+                command:
+                  - bash
+                  - "-c"
+                  - 'curl --fail "http://localhost:${ADMIN_INTERFACE_PORT}/status/ready" -H "X-API-KEY: ${ADMIN_API_KEY}"'
+            livenessProbe:
+              timeoutSeconds: 30
+              initialDelaySeconds: 300
+              exec:
+                command:
+                  - bash
+                  - "-c"
+                  - 'curl --fail "http://localhost:${ADMIN_INTERFACE_PORT}/status/live" -H "X-API-KEY: ${ADMIN_API_KEY}"'
+            resources: {}
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            imagePullPolicy: IfNotPresent
+            resources:
+              limits:
+                cpu: ${CPU_LIMIT}
+                memory: ${MEMORY_LIMIT}
+              requests:
+                cpu: ${CPU_REQUEST}
+                memory: ${MEMORY_REQUEST}
+        initContainers:
+        - name: init-db
+          image: busybox
+          command: ['sh', '-c']
+          args: ["until nc -z ${POSTGRESQL_NAME}:\"${POSTGRESQL_PORT}\"; do echo waiting for db; sleep 2; done;"]
+        restartPolicy: Always
+        serviceAccountName: ""
+  status: {}
+
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: ${ACAPY_NAME}
+    labels:
+      name: ${ACAPY_NAME}
+      app: ${APP_NAME}${SUFFIX}
+      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app-group: ${APP_GROUP}
+      role: ${ROLE}
+      env: ${ENV_NAME}
+  spec:
+    selector:
+      name: ${ACAPY_NAME}
+    ports:
+      - name: '3000'
+        protocol: TCP
+        port: ${{AGENT_ADMIN_PORT}}
+        targetPort: ${{AGENT_ADMIN_PORT}}
+      - name: '8000'
+        protocol: TCP
+        port: ${{AGENT_HTTP_PORT}}
+        targetPort: ${{AGENT_HTTP_PORT}}
+
+- kind: Route
+  apiVersion: v1
+  metadata:
+    name: ${ACAPY_NAME}
+    labels:
+      name: ${ACAPY_NAME}-http
+      app: ${APP_NAME}${SUFFIX}
+      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app-group: ${APP_GROUP}
+      role: ${ROLE}
+      env: ${ENV_NAME}
+    annotations:
+      haproxy.router.openshift.io/timeout: ${ROUTE_TIMEOUT}
+  spec:
+    host: ${AGENT_SUBDOMAIN}.${APP_DOMAIN}
+    to:
+      kind: Service
+      name: ${ACAPY_NAME}
+      weight: 100
+    port:
+      targetPort: ${{AGENT_HTTP_PORT}}
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: None
+    wildcardPolicy: None
+  status:
+    ingress:
+      - host: ${AGENT_SUBDOMAIN}.${APP_DOMAIN}
+        routerName: default
+        conditions:
+          - type: Admitted
+            status: 'True'
+        wildcardPolicy: None
+        routerCanonicalHostname: ${APP_DOMAIN}
+
+- kind: Route
+  apiVersion: v1
+  metadata:
+    name: ${ACAPY_NAME}-admin
+    labels:
+      name: ${ACAPY_NAME}-admin
+      app: ${APP_NAME}${SUFFIX}
+      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app-group: ${APP_GROUP}
+      role: ${ROLE}
+      env: ${ENV_NAME}
+    annotations:
+      haproxy.router.openshift.io/timeout: ${ROUTE_TIMEOUT}
+  spec:
+    host: ${AGENT_SUBDOMAIN}-admin.${APP_DOMAIN}
+    to:
+      kind: Service
+      name: ${ACAPY_NAME}
+      weight: 100
+    port:
+      targetPort: ${{AGENT_ADMIN_PORT}}
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: None
+    wildcardPolicy: None
+  status:
+    ingress:
+      - host: ${AGENT_SUBDOMAIN}-admin.${APP_DOMAIN}
+        routerName: default
+        conditions:
+          - type: Admitted
+            status: 'True'
+        wildcardPolicy: None
+        routerCanonicalHostname: ${APP_DOMAIN}
+
+######################################################################
+# Secrets
+######################################################################
+- kind: Secret
+  apiVersion: v1
+  metadata:
+    name: ${POSTGRESQL_NAME}
+    labels:
+      name: ${POSTGRESQL_NAME}
+      app: ${APP_NAME}${SUFFIX}
+      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app-group: ${APP_GROUP}
+      role: wallet
+      env: ${ENV_NAME}
+    annotations:
+      template.openshift.io/expose-database-user: "{.data['database-user']}"
+      template.openshift.io/expose-database-password: "{.data['database-password']}"
+      template.openshift.io/expose-database-admin-user: "{.data['database-admin-user']}"
+      template.openshift.io/expose-database-admin-password: "{.data['database-admin-password']}"
+      template.openshift.io/expose-database-name: "{.data['database-name']}"
+  stringData:
+    database-user: "dbuser"
+    database-password: "${POSTGRESQL_PASSWORD}"
+    database-admin-user: "postgres"
+    database-admin-password: "${POSTGRESQL_ADMIN_PASSWORD}"
+    database-name: "${POSTGRESQL_DATABASE_NAME}"
+  type: Opaque
+
+- kind: Secret
+  apiVersion: v1
+  metadata:
+    name: ${ACAPY_NAME}
+    labels:
+      name: ${ACAPY_NAME}
+      app: ${APP_NAME}${SUFFIX}
+      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app-group: ${APP_GROUP}
+      role: ${ROLE}
+      env: ${ENV_NAME}
+    annotations:
+      template.openshift.io/expose-master-key: "{.data['master-key']}"
+      template.openshift.io/expose-admin-api-key: "{.data['admin-api-key']}"
+      template.openshift.io/expose-webhook-url: "{.data['webhook-url']}"
+  stringData:
+    master-key: "${WALLET_ENCRYPTION_KEY}"
+    admin-api-key: ${ADMIN_API_KEY}
+    webhook-url: ${WEBHOOK_URL}
+  type: Opaque
+
+######################################################################
+# Parameters
+######################################################################
+parameters:
+- name: ENV_NAME
+  displayName: Environment TAG name
+  description: The TAG name for this environment, e.g., dev, test, prod.
+  required: true
+  value: 'development'
+- name: APP_NAME
+  displayName: Application name
+  description: Used to group components together in the OpenShift console.
+  required: true
+  value: 'aries-verifier'
+- name: APP_GROUP
+  displayName: App Group
+  description: Used to group components together.
+  required: true
+  value: 'aries-verifier'
+- name: SUFFIX
+  displayName: Suffix
+  description: A suffix applied to all the objects in this template.
+  required: false
+  value: ''
+- name: ROLE
+  displayName: Role
+  description: The role of this service within the application - used for Network Policies.
+  required: true
+  value: 'agent'
+- name: API_ROLE
+  displayName: Agent Role
+  description: The role of the api service within the application - used for Network Policies
+  required: true
+  value: 'api'
+- name: APP_DOMAIN
+  description: The exposed hostname that will route to the public agent endpoint.
+  required: true
+- name: AGENT_SUBDOMAIN
+  description: The external subdomain to access Aries verifier.
+  required: true
+  value: 'aries-verifier'
+- name: POSTGRESQL_NAME
+  displayName: PostgreSQL name
+  description: The name assigned to all PostgreSQL objects defined in this template.
+  required: true
+  value: 'postgres-database'
+- name: POSTGRESQL_PASSWORD
+  displayName: PostgreSQL connection password
+  description: Password for the PostgreSQL connection user. Needs to be basee64 encoded.
+  required: true
+  generate: "expression"
+  from: "[a-zA-Z0-9]{16}"
+- name: POSTGRESQL_ADMIN_PASSWORD
+  displayName: PostgreSQL administrator password
+  description: Password for the PostgreSQL administrative account. Needs to be basee64 encoded.
+  required: true
+  generate: "expression"
+  from: "[a-zA-Z0-9]{16}"
+- name: POSTGRESQL_DATABASE_NAME
+  displayName: PostgreSQL database name
+  description: Name of the PostgreSQL database.
+  required: true
+  value: 'wallet'
+- name: POSTGRESQL_PORT
+  displayName: PostgreSql key management service port
+  required: true
+  description: The port number of the deployed PostgreSql database. Only used when WALLET_STORAGE_TYPE = postgres_storage.
+  value: '5432'
+- name: WALLET_STORAGE_TYPE
+  displayName: Wallet storage type
+  description: The wallet storage type. Possible values are 'postgres_storage' or 'sqlite_storage' at the moment.  If not defined, defaults to 'sqlite_storage' for compatibility.
+  required: false
+  value: 'postgres_storage'
+- name: AGENT_ADMIN_PORT
+  displayName: Agent Admin Port
+  description: The port on which the agent will listen for the admin API.
+  required: true
+  value: '3000'
+- name: WALLET_ENCRYPTION_KEY
+  displayName: Wallet encryption key
+  description: The encryption key to be used to encrypt the agent wallet.
+  required: true
+- name: ACAPY_AUTO_ACCEPT_INVITES
+  displayName: ACAPy auto accept invites
+  description: ACAPY_AUTO_ACCEPT_INVITES
+  required: true
+  value: 'false'
+- name: ADMIN_API_KEY
+  displayName: Admin API key
+  description: The key used to authenticate client requests to the admin api.
+  required: false
+  value: ''
+- name: WALLET_TYPE
+  displayName: Wallet type
+  description: The wallet type. Supported internal storage types are 'basic' (memory), 'indy', and 'askar'.
+  required: true
+  value: 'askar'
+- name: WALLET_STORAGE_CONFIG
+  displayName: Wallet storage configuration
+  required: true
+  description: The wallet storage configuration.
+  value: '{\"url\":\"${POSTGRESQL_NAME}:${POSTGRESQL_PORT}\",\"max_connections\":5,\"wallet_scheme\":\"MultiWalletSingleTableSharedPool\"}'
+- name: WALLET_STORAGE_CREDS
+  displayName: Wallet storage credentials
+  required: true
+  description: The wallet storage credentials.
+  value: '{\"account\":\"${POSTGRESQL_USER}\",\"password\":\"${POSTGRESQL_PASSWORD}\",\"admin_account\":\"${POSTGRESQL_ADMIN_USER}\",\"admin_password\":\"${POSTGRESQL_ADMIN_PASSWORD}\"}'
+- name: ACAPY_NAME
+  displayName: ACA-Py name
+  description: The name assigned to all ACA-Py objects defined in this template.
+  required: true
+  value: 'acapy-agent'
+- name: ACAPY_LABEL
+  displayName: ACA-Py label
+  description: Label of the agent.
+  required: true
+  value: 'Aries verifier'
+- name: ACAPY_IMAGE_URL
+  displayName: Agent Image URL
+  description: The URL of the image for the agent
+  required: false
+- name: AGENT_HTTP_PORT
+  displayName: Agent HTTP port
+  description: The HTTP port on which the agent will listen.
+  required: true
+  value: '8000'
+- name: LOG_LEVEL
+  displayName: Log Level
+  description: The logging level of the agent.
+  required: true
+  value: 'DEBUG'
+- name: GENESIS_FILE_URL
+  displayName: Genesis file URL
+  description: The URL from which the genesis file can be downloaded.
+  required: true
+- name: STORAGE_CLASS_NAME
+  displayNgp2iption: The storage class of the volume.
+  required: true
+  value: 'gp2'
+- name: POSTGRESQL_VOLUME_SIZE
+  displayName: PostgreSql volume size
+  description: The size of the PostgreSql persistent volume, e.g. 512Mi, 1Gi, 2Gi.
+  required: true
+  value: 1Gi
+- name: ROUTE_TIMEOUT
+  displayName: Route Timeout
+  description: The timeout for the application route.  When this timeout is exceeded the application's route will respond with a 504 Gateway Timeout error.
+  required: true
+  value: 120s
+- name: CPU_REQUEST
+  displayName: Resources CPU Request
+  description: The resources CPU request (in cores) for this build.
+  required: true
+  value: 100m
+- name: CPU_LIMIT
+  displayName: Resources CPU Limit
+  description: The resources CPU limit (in cores) for this build.
+  required: true
+  value: 250m
+- name: MEMORY_REQUEST
+  displayName: Resources Memory Request
+  description: The resources Memory request (in Mi, Gi, etc) for this build.
+  required: true
+  value: 128Mi
+- name: MEMORY_LIMIT
+  displayName: Resources Memory Limit
+  description: The resources Memory limit (in Mi, Gi, etc) for this build.
+  required: true
+  value: 256Mi
+- name: WEBHOOK_URL
+  displayName: Webhook URL
+  description: Send webhooks containing internal state changes to the specified URL. Optional API key to be passed in the request body can be appended using a hash separator '#'.
+  required: false
