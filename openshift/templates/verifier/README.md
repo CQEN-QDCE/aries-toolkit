@@ -2,16 +2,24 @@
 
 Ce dépôt contient les instructions nécessaires pour déployer un agent vérificateur Aries sur OpenShift.
 
-| Gabarit  | Descripton |
+| Modèle   | Descripton |
 | -------- | ---------- |
 | [aries-verifier.yaml](https://github.com/CQEN-QDCE/aries-toolkit/blob/master/openshift/templates/verifier/aries-verifier.yaml) | Installation de l'agent. |
 | [aries-verifier.candy-dev.params](https://github.com/CQEN-QDCE/aries-toolkit/blob/master/openshift/templates/verifier/aries-verifier.candy-dev.params) | Paramètres pour un environnement de développement. |
 
-## Paramètres du gabarit
+## Paramètres du modèle
 
-Tous les paramètres du gabarit sont obligatoires. La plupart d'entre eux ont des valeurs par défaut, mais certains n'en ont pas. Ils doivent être fournis lors de l'instanciation avec 'oc process'.
+La majorité des paramètres du modèle sont obligatoires. La plupart d'entre eux ont des valeurs par défaut, mais certains n'en ont pas. Ils doivent être fournis lors de l'instanciation avec 'oc process'. Il est recommendé de créer un ou plusieurs fichiers de paramètres pour renseigner, au minimum, la valeur des paramètres obligatoires suivants (consulter le tableau pour en connaître la description):
 
-Le fichier de paramètres permet la personnalisation de l'installation pour un environnement particulier (par exemple).
+```
+APP_DOMAIN=
+ACAPY_LABEL=
+WALLET_ENCRYPTION_KEY=
+GENESIS_FILE_URL=
+POSTGRESQL_PASSWORD=
+```
+
+Chaque fichier de paramètres peut ensuite être réutilisé lors d'une réinstallation.
 
 Commencer par créer un projet sur OpenShift:
 ```bash
@@ -19,7 +27,7 @@ oc new-project aries-toolkit
 ```
 Lancez l'installation sur OpenShift
 ```bash
-oc process -f ./aries-verifier.yaml --param-file=./aries-verifier.candy-dev.params | oc apply -f -
+oc process -f ./aries-verifier.yaml --param-file=./aries-verifier.dev.params | oc apply -f -
 ```
 
 Une fois que tous les pods sont démarrés, vous pouvez accéder à l'agent à l'adresse https://aries-verifier.<APP_DOMAIN>.
