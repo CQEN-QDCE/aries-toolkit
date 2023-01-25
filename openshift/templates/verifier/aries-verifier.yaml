@@ -1,3 +1,6 @@
+######################################################################
+# oc process -f ./aries-verifier.yaml --param-file=./aries-verifier.candy-dev.params | oc apply -f -
+######################################################################
 kind: Template
 apiVersion: template.openshift.io/v1
 metadata:
@@ -14,8 +17,8 @@ objects:
     name: ${POSTGRESQL_NAME}-files
     labels:
       name: ${POSTGRESQL_NAME}-files
-      app: ${APP_NAME}${SUFFIX}
-      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app: ${APP_GROUP}
+      app.kubernetes.io/part-of: ${APP_GROUP}
       app-group: ${APP_GROUP}
       role: wallet
       env: ${ENV_NAME}
@@ -33,8 +36,8 @@ objects:
     name: ${POSTGRESQL_NAME}
     labels:
       name: ${POSTGRESQL_NAME}
-      app: ${APP_NAME}${SUFFIX}
-      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app: ${APP_GROUP}
+      app.kubernetes.io/part-of: ${APP_GROUP}
       app-group: ${APP_GROUP}
       role: wallet
       env: ${ENV_NAME}
@@ -60,8 +63,8 @@ objects:
       template.alpha.openshift.io/wait-for-ready: 'true'
     labels:
       name: ${POSTGRESQL_NAME}
-      app: ${APP_NAME}${SUFFIX}
-      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app: ${APP_GROUP}
+      app.kubernetes.io/part-of: ${APP_GROUP}
       app-group: ${APP_GROUP}
       role: wallet
       env: ${ENV_NAME}
@@ -101,6 +104,7 @@ objects:
             successThreshold: 1
             failureThreshold: 3
             exec:
+# TODO, chercher comment utiliser les variables de nos secret au lieu de coder en dur la commande du readinessProbe
 #              command:
 #                - /bin/sh
 #                - -i
@@ -166,13 +170,13 @@ objects:
     name: ${ACAPY_NAME}-allow-ingress
     labels:
       name: ${ACAPY_NAME}-allow-ingress
-      app: ${APP_NAME}${SUFFIX}
+      app: ${APP_GROUP}
       app-group: ${APP_GROUP}
-      role: ${ROLE}
+      role: agent
       env: ${ENV_NAME}
   spec:
     description: |
-      Allow traffic from routes into the ${ROLE} container(s).
+      Allow traffic from routes into the agent container(s).
     ingress:
       - from:
           - namespaceSelector:
@@ -180,8 +184,8 @@ objects:
                 network.openshift.io/policy-group: ingress
     podSelector:
       matchLabels:
-        role: ${ROLE}
-        app: ${APP_NAME}${SUFFIX}
+        role: agent
+        app: ${APP_GROUP}
         env: ${ENV_NAME}
     policyTypes:
       - Ingress
@@ -192,9 +196,9 @@ objects:
     name: ${ACAPY_NAME}
     labels:
       name: ${ACAPY_NAME}
-      app: ${APP_NAME}${SUFFIX}
+      app: ${APP_GROUP}
       app-group: ${APP_GROUP}
-      role: ${ROLE}
+      role: agent
       env: ${ENV_NAME}
   spec:
     description: |
@@ -204,7 +208,7 @@ objects:
           - podSelector:
               matchLabels:
                 role: ${API_ROLE}
-                app: ${APP_NAME}${SUFFIX}
+                app: ${APP_GROUP}
                 env: ${ENV_NAME}
             namespaceSelector:
               matchLabels:
@@ -214,8 +218,8 @@ objects:
             port: ${{AGENT_ADMIN_PORT}}
     podSelector:
       matchLabels:
-        role: ${ROLE}
-        app: ${APP_NAME}${SUFFIX}
+        role: agent
+        app: ${APP_GROUP}
         env: ${ENV_NAME}
 
 - kind: DeploymentConfig
@@ -224,10 +228,10 @@ objects:
     name: ${ACAPY_NAME}
     labels:
       name: ${ACAPY_NAME}
-      app: ${APP_NAME}${SUFFIX}
-      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app: ${APP_GROUP}
+      app.kubernetes.io/part-of: ${APP_GROUP}
       app-group: ${APP_GROUP}
-      role: ${ROLE}
+      role: agent
       env: ${ENV_NAME}
     annotations:
       description: Defines how to deploy the application server
@@ -244,10 +248,10 @@ objects:
         name: ${ACAPY_NAME}
         labels:
           name: ${ACAPY_NAME}
-          app: ${APP_NAME}${SUFFIX}
-          app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+          app: ${APP_GROUP}
+          app.kubernetes.io/part-of: ${APP_GROUP}
           app-group: ${APP_GROUP}
-          role: ${ROLE}
+          role: agent
           env: ${ENV_NAME}
         annotations:
           description: Defines how to deploy the ${ACAPY_NAME} server
@@ -267,13 +271,12 @@ objects:
                 --genesis-url "${GENESIS_FILE_URL}"
                 --auto-accept-requests
                 --auto-respond-messages
-                --auto-respond-credential-proposal
+                --auto-ping-connection
                 --auto-respond-credential-offer
-                --auto-respond-credential-request
+                --auto-verify-presentation
                 --auto-respond-presentation-proposal
                 --auto-respond-presentation-request
                 --auto-provision
-                --auto-store-credential
                 --wallet-type '${WALLET_TYPE}'
                 --wallet-name "$(echo ${WALLET_NAME} | tr '[:upper:]' '[:lower:]' | sed "s~-~_~g")"
                 --wallet-key "${WALLET_ENCRYPTION_KEY}"
@@ -340,8 +343,6 @@ objects:
                   secretKeyRef:
                     name: ${ACAPY_NAME}
                     key: admin-api-key
-              - name: ACAPY_LABEL
-                value: ${ACAPY_LABEL}
               - name: AGENT_LOG_LEVEL
                 value: ${LOG_LEVEL}
             image: "bcgovimages/aries-cloudagent:py36-1.16-1_0.7.5"
@@ -392,10 +393,10 @@ objects:
     name: ${ACAPY_NAME}
     labels:
       name: ${ACAPY_NAME}
-      app: ${APP_NAME}${SUFFIX}
-      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app: ${APP_GROUP}
+      app.kubernetes.io/part-of: ${APP_GROUP}
       app-group: ${APP_GROUP}
-      role: ${ROLE}
+      role: agent
       env: ${ENV_NAME}
   spec:
     selector:
@@ -416,10 +417,10 @@ objects:
     name: ${ACAPY_NAME}
     labels:
       name: ${ACAPY_NAME}-http
-      app: ${APP_NAME}${SUFFIX}
-      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app: ${APP_GROUP}
+      app.kubernetes.io/part-of: ${APP_GROUP}
       app-group: ${APP_GROUP}
-      role: ${ROLE}
+      role: agent
       env: ${ENV_NAME}
     annotations:
       haproxy.router.openshift.io/timeout: ${ROUTE_TIMEOUT}
@@ -451,10 +452,10 @@ objects:
     name: ${ACAPY_NAME}-admin
     labels:
       name: ${ACAPY_NAME}-admin
-      app: ${APP_NAME}${SUFFIX}
-      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app: ${APP_GROUP}
+      app.kubernetes.io/part-of: ${APP_GROUP}
       app-group: ${APP_GROUP}
-      role: ${ROLE}
+      role: agent
       env: ${ENV_NAME}
     annotations:
       haproxy.router.openshift.io/timeout: ${ROUTE_TIMEOUT}
@@ -489,8 +490,8 @@ objects:
     name: ${POSTGRESQL_NAME}
     labels:
       name: ${POSTGRESQL_NAME}
-      app: ${APP_NAME}${SUFFIX}
-      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app: ${APP_GROUP}
+      app.kubernetes.io/part-of: ${APP_GROUP}
       app-group: ${APP_GROUP}
       role: wallet
       env: ${ENV_NAME}
@@ -514,10 +515,10 @@ objects:
     name: ${ACAPY_NAME}
     labels:
       name: ${ACAPY_NAME}
-      app: ${APP_NAME}${SUFFIX}
-      app.kubernetes.io/part-of: ${APP_NAME}${SUFFIX}
+      app: ${APP_GROUP}
+      app.kubernetes.io/part-of: ${APP_GROUP}
       app-group: ${APP_GROUP}
-      role: ${ROLE}
+      role: agent
       env: ${ENV_NAME}
     annotations:
       template.openshift.io/expose-master-key: "{.data['master-key']}"
@@ -553,11 +554,6 @@ parameters:
   description: A suffix applied to all the objects in this template.
   required: false
   value: ''
-- name: ROLE
-  displayName: Role
-  description: The role of this service within the application - used for Network Policies.
-  required: true
-  value: 'agent'
 - name: API_ROLE
   displayName: Agent Role
   description: The role of the api service within the application - used for Network Policies
@@ -615,7 +611,7 @@ parameters:
   displayName: ACAPy auto accept invites
   description: ACAPY_AUTO_ACCEPT_INVITES
   required: true
-  value: 'false'
+  value: 'true'
 - name: ADMIN_API_KEY
   displayName: Admin API key
   description: The key used to authenticate client requests to the admin api.
@@ -687,7 +683,7 @@ parameters:
   displayName: Resources CPU Limit
   description: The resources CPU limit (in cores) for this build.
   required: true
-  value: 250m
+  value: 300m
 - name: MEMORY_REQUEST
   displayName: Resources Memory Request
   description: The resources Memory request (in Mi, Gi, etc) for this build.
@@ -697,7 +693,7 @@ parameters:
   displayName: Resources Memory Limit
   description: The resources Memory limit (in Mi, Gi, etc) for this build.
   required: true
-  value: 256Mi
+  value: 512Mi
 - name: WEBHOOK_URL
   displayName: Webhook URL
   description: Send webhooks containing internal state changes to the specified URL. Optional API key to be passed in the request body can be appended using a hash separator '#'.
