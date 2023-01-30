@@ -1,1 +1,1 @@
-openshift/templates/issuer/aries-issuer.candy-dev.params
+*.env
