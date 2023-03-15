@@ -1,6 +1,6 @@
-# Déployer l'outil de gestion de base de données OmniDB sur OpenShift
+# Déployer OmniDB sur OpenShift
 
-Ce dépôt contient les instructions nécessaires pour déployer l'outil de gestion de base de données OmniDB sur OpenShift.
+Ce dépôt contient les instructions nécessaires pour déployer OmniDB sur OpenShift. OmniDB est un outil de gestion de bases de données open-source qui permet aux utilisateurs de gérer plusieurs bases de données à partir d'une interface web unique. Il prend en charge un grand nombre de bases de données, dont PostgreSQL, MySQL, Oracle, SQLite et d'autres. Il offre des fonctionnalités telles que la visualisation du schéma de la base de données, l'exécution de requêtes, la gestion des utilisateurs, l'édition et le filtrage des données, etc. Il dispose également d'un puissant éditeur de requête SQL.
 
 | Gabarit  | Descripton |
 | -------- | ---------- |
