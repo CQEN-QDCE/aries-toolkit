@@ -1,0 +1,143 @@
+######################################################################
+# oc process -f ./omnidb.yaml --param-file=./omnidb.dev.params | oc apply -f -
+######################################################################
+kind: Template
+apiVersion: template.openshift.io/v1
+metadata:
+  name: ${APP_NAME}
+  annotations:
+    description: 
+    tags:
+objects:
+######################################################################
+# OmniDB
+######################################################################
+- kind: PersistentVolumeClaim
+  apiVersion: v1
+  metadata:
+    name: ${OMNIDB_NAME}-data
+  spec:
+    storageClassName: ${STORAGE_CLASS_NAME}
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${OMNI_VOLUME_SIZE}
+- kind: DeploymentConfig
+  apiVersion: v1
+  metadata:
+    name: ${OMNIDB_NAME}
+    annotations:
+      template.alpha.openshift.io/wait-for-ready: 'true'
+    labels:
+      app: ${OMNIDB_NAME}
+  spec:
+    strategy:
+      type: Recreate
+    replicas: 1
+    selector:
+      name: ${OMNIDB_NAME}
+    template:
+      metadata:
+        labels:
+          name: ${OMNIDB_NAME}
+      spec:
+        containers:
+        - name: ${OMNIDB_NAME}
+          image: "taivokasper/omnidb:latest"
+          ports:
+          - containerPort: ${{OMNIDB_PORT}}
+            protocol: TCP
+          volumeMounts:
+          - name: ${OMNIDB_NAME}-data
+            mountPath: "/etc/omnidb"
+          terminationMessagePath: "/dev/termination-log"
+          imagePullPolicy: ""
+          capabilities: {}
+          securityContext:
+            capabilities: {}
+            privileged: false
+        volumes:
+        - name: ${OMNIDB_NAME}-data
+          persistentVolumeClaim:
+            claimName: ${OMNIDB_NAME}-data
+        restartPolicy: Always
+        dnsPolicy: ClusterFirst
+  status: {}
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: ${OMNIDB_NAME}
+  spec:
+    ports:
+    - name: ${OMNIDB_NAME}
+      protocol: TCP
+      port: ${{MONGOUI_PORT}}
+      targetPort: ${{MONGOUI_PORT}}
+      nodePort: 0
+    selector:
+      name: ${OMNIDB_NAME}
+    type: ClusterIP
+    sessionAffinity: None
+  status:
+    loadBalancer: {}
+- kind: Route
+  apiVersion: v1
+  metadata:
+    name: ${OMNIDB_NAME}
+  spec:
+    host: ${APP_SUBDOMAIN}.${APP_DOMAIN}
+    to:
+      kind: Service
+      name: ${OMNIDB_NAME}
+      weight: 100
+    port:
+      targetPort: ${{OMNIDB_PORT}}
+    tls:
+      termination: edge
+      insecureEdgeTerminationPolicy: None
+    wildcardPolicy: None
+  status:
+    ingress:
+      - host: ${APP_SUBDOMAIN}.${APP_DOMAIN}
+        routerName: default
+        conditions:
+          - type: Admitted
+            status: "True"
+        wildcardPolicy: None
+        routerCanonicalHostname: ${APP_DOMAIN}
+######################################################################
+# Parameters
+######################################################################
+parameters:
+- name: APP_NAME
+  displayName: Application name
+  description: Used to group components together in the OpenShift console.
+  required: true
+  value: "omnidb"
+- name: APP_DOMAIN
+  description: The external hostname to access the application.
+  required: true
+- name: APP_SUBDOMAIN
+  description: The external subdomain to access the application.
+  required: true
+  value: "omnidb"
+- name: OMNIDB_NAME
+  displayName: OmniDB name
+  description: The name assigned to all OmniDB objects defined in this template.
+  required: true
+  value: "omnidb"
+- name: STORAGE_CLASS_NAME
+  displayNgp2iption: The storage class of the volume.
+  required: true
+  value: gp2
+- name: OMNI_VOLUME_SIZE
+  displayName: OmniDB volume size
+  description: The size of the OmniDB persistent volume, e.g. 512Mi, 1Gi, 2Gi.
+  required: true
+  value: 128Mi
+- name: OMNIDB_PORT
+  displayName: OmniDB port
+  description: Port on which OmniDB listens.
+  required: true
+  value: "8080"
