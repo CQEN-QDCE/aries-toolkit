@@ -22,7 +22,7 @@ objects:
     - ReadWriteOnce
     resources:
       requests:
-        storage: ${OMNI_VOLUME_SIZE}
+        storage: ${OMNIDB_VOLUME_SIZE}
 - kind: DeploymentConfig
   apiVersion: v1
   metadata:
@@ -131,7 +131,7 @@ parameters:
   displayNgp2iption: The storage class of the volume.
   required: true
   value: gp2
-- name: OMNI_VOLUME_SIZE
+- name: OMNIDB_VOLUME_SIZE
   displayName: OmniDB volume size
   description: The size of the OmniDB persistent volume, e.g. 512Mi, 1Gi, 2Gi.
   required: true
