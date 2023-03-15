@@ -72,8 +72,8 @@ objects:
     ports:
     - name: ${OMNIDB_NAME}
       protocol: TCP
-      port: ${{MONGOUI_PORT}}
-      targetPort: ${{MONGOUI_PORT}}
+      port: ${{OMNIDB_PORT}}
+      targetPort: ${{OMNIDB_PORT}}
       nodePort: 0
     selector:
       name: ${OMNIDB_NAME}
