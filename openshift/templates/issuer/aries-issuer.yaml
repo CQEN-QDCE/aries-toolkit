@@ -225,10 +225,10 @@ objects:
         - ${POSTGRESQL_NAME}
         from:
           kind: ImageStreamTag
-#          name: postgresql:latest
-#          namespace: openshift
-          name: ${POSTGRESQL_IMAGE}:${POSTGRESQL_TAG}
-          namespace: ${IMAGE_NAMESPACE}
+          name: postgresql:latest
+          namespace: openshift
+#          name: ${POSTGRESQL_IMAGE}:${POSTGRESQL_TAG}
+#          namespace: ${IMAGE_NAMESPACE}
         lastTriggeredImage: ''
     - type: ConfigChange
     replicas: 1
