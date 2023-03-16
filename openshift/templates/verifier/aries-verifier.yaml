@@ -79,8 +79,8 @@ objects:
         - ${POSTGRESQL_NAME}
         from:
           kind: ImageStreamTag
-          name: postgresql:latest
-          namespace: openshift
+          name: ${POSTGRESQL_IMAGE}:${POSTGRESQL_TAG}
+          namespace: ${IMAGE_NAMESPACE}
         lastTriggeredImage: ''
     - type: ConfigChange
     replicas: 1
@@ -153,11 +153,14 @@ objects:
           securityContext:
             capabilities: {}
             privileged: false
+#            runAsUser: 0
+#            runAsNonRoot: false
         volumes:
         - name: ${POSTGRESQL_NAME}-files
           persistentVolumeClaim:
             claimName: ${POSTGRESQL_NAME}-files
         restartPolicy: Always
+        securityContext: {}
         dnsPolicy: ClusterFirst
   status: {}
 
@@ -566,6 +569,7 @@ parameters:
   description: The external subdomain to access Aries verifier.
   required: true
   value: 'aries-verifier'
+
 - name: POSTGRESQL_NAME
   displayName: PostgreSQL name
   description: The name assigned to all PostgreSQL objects defined in this template.
@@ -593,6 +597,22 @@ parameters:
   required: true
   description: The port number of the deployed PostgreSql database. Only used when WALLET_STORAGE_TYPE = postgres_storage.
   value: '5432'
+- name: POSTGRESQL_IMAGE
+  displayName: Source Image Name
+  required: true
+  description: The name of the source image.
+  value: database
+- name: POSTGRESQL_TAG
+  displayName: Source Image Tag
+  required: true
+  description: The tag of the source image.
+  value: latest
+- name: IMAGE_NAMESPACE
+  displayName: Image Namespace
+  required: true
+  description: The namespace where to get the above image name
+  value: ""
+
 - name: WALLET_STORAGE_TYPE
   displayName: Wallet storage type
   description: The wallet storage type. Possible values are 'postgres_storage' or 'sqlite_storage' at the moment.  If not defined, defaults to 'sqlite_storage' for compatibility.
