@@ -25,7 +25,7 @@ objects:
   spec:
     storageClassName: ${STORAGE_CLASS_NAME}
     accessModes:
-    - ReadWriteMany
+    - ${STORAGE_ACCESS_MODES}
     resources:
       requests:
         storage: ${TAILS_SERVER_VOLUME_SIZE}
@@ -171,7 +171,7 @@ objects:
   spec:
     storageClassName: ${STORAGE_CLASS_NAME}
     accessModes:
-    - ReadWriteMany
+    - ${STORAGE_ACCESS_MODES}
     resources:
       requests:
         storage: ${POSTGRESQL_VOLUME_SIZE}
@@ -859,6 +859,10 @@ parameters:
   displayNgp2iption: The storage class of the volume.
   required: true
   value: 'gp2'
+- name: STORAGE_ACCESS_MODES
+  displayNgp2iption: The access mode for the storage class of the volume.
+  required: true
+  value: 'ReadWriteOnce'
 - name: TAILS_SERVER_VOLUME_SIZE
   displayName: Tails server volume size
   description: The size of the tails server persistent volume, e.g. 512Mi, 1Gi, 2Gi.
