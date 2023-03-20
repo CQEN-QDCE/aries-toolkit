@@ -446,7 +446,7 @@ objects:
               - name: WEBHOOK_URL
                 value: ${WEBHOOK_URL}
               - name: WALLET_NAME
-                value: ${POSTGRESQL_DATABASE_NAME}
+                value: ${APP_NAME}
               - name: WALLET_STORAGE_TYPE
                 value: ${WALLET_STORAGE_TYPE}
               - name: WALLET_STORAGE_CONFIGURATION
@@ -711,7 +711,7 @@ parameters:
   displayName: Application name
   description: Used to group components together in the OpenShift console.
   required: true
-  value: 'aries_issuer'
+  value: 'aries-issuer'
 - name: APP_GROUP
   displayName: App Group
   description: Used to group components together.
@@ -764,7 +764,7 @@ parameters:
   displayName: PostgreSQL database name
   description: Name of the PostgreSQL database.
   required: true
-  value: 'aries_issuer'
+  value: 'aries-issuer'
 - name: POSTGRESQL_PORT
   displayName: PostgreSql key management service port
   required: true
