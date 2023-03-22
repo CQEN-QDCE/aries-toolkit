@@ -66,6 +66,7 @@ objects:
       app: ${APP_GROUP}
       app.kubernetes.io/part-of: ${APP_GROUP}
       app-group: ${APP_GROUP}
+      app.kubernetes.io/managed-by: "yaml"
       role: tails
       env: ${ENV_NAME}
   spec:
@@ -212,6 +213,9 @@ objects:
       app: ${APP_GROUP}
       app.kubernetes.io/part-of: ${APP_GROUP}
       app-group: ${APP_GROUP}
+      app.kubernetes.io/runtime: postgresql
+      app.kubernetes.io/name: postgresql
+      app.kubernetes.io/managed-by: "yaml"
       role: wallet
       env: ${ENV_NAME}
   spec:
@@ -374,6 +378,9 @@ objects:
       app: ${APP_GROUP}
       app.kubernetes.io/part-of: ${APP_GROUP}
       app-group: ${APP_GROUP}
+      app.kubernetes.io/runtime: python
+      app.kubernetes.io/name: python
+      app.kubernetes.io/managed-by: "yaml"
       role: ${ROLE}
       env: ${ENV_NAME}
     annotations:
@@ -395,6 +402,9 @@ objects:
           app: ${APP_GROUP}
           app.kubernetes.io/part-of: ${APP_GROUP}
           app-group: ${APP_GROUP}
+          app.kubernetes.io/runtime: python
+          app.kubernetes.io/name: python
+          app.kubernetes.io/managed-by: "yaml"
           role: ${ROLE}
           env: ${ENV_NAME}
         annotations:
@@ -445,6 +455,7 @@ objects:
                 value: ${GENESIS_FILE_URL}
               - name: WEBHOOK_URL
                 value: ${WEBHOOK_URL}
+# le caractère underscore n'est pas accepté comme valeur pour le Wallet Name.
               - name: WALLET_NAME
                 value: ${APP_NAME}
               - name: WALLET_STORAGE_TYPE

@@ -591,7 +591,7 @@ parameters:
   displayName: PostgreSQL database name
   description: Name of the PostgreSQL database.
   required: true
-  value: 'wallet'
+  value: 'aries-verifier'
 - name: POSTGRESQL_PORT
   displayName: PostgreSql key management service port
   required: true
