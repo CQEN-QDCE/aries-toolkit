@@ -1,0 +1,8 @@
+replicaCount: 1
+app_domain: apps.exp.openshift.cqen.ca
+app_name: omnidb
+app_subdomain: omnidb
+omnidb_name: omnidb
+omnidb_port: "8080"
+omnidb_volume_size: 128Mi
+storage_class_name: gp2
