@@ -1,0 +1,25 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Values.omnidb_name }}
+spec:
+  host: {{ .Values.app_subdomain }}.{{ .Values.app_domain }}
+  port:
+    targetPort: {{ .Values.omnidb_port }}
+  tls:
+    insecureEdgeTerminationPolicy: None
+    termination: edge
+  to:
+    kind: Service
+    name: {{ .Values.omnidb_name }}
+    weight: 100
+  wildcardPolicy: None
+status:
+  ingress:
+  - conditions:
+    - status: "True"
+      type: Admitted
+    host: {{ .Values.app_subdomain }}.{{ .Values.app_domain }}
+    routerCanonicalHostname: {{ .Values.app_domain }}
+    routerName: default
+    wildcardPolicy: None
