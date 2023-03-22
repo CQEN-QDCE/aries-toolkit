@@ -1,0 +1,3 @@
+name: ${APP_NAME}
+version: v0.0.1
+description: Outil de gestion de bases de données open-source qui permet aux utilisateurs de gérer plusieurs bases de données (PostgreSQL, MySQL, Oracle, SQLite, etc.) à partir d'une interface web unique.
