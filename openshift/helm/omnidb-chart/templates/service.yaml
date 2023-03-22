@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.omnidb_name }}
+spec:
+  ports:
+  - name: {{ .Values.omnidb_name }}
+    nodePort: 0
+    port: {{ .Values.omnidb_port }}
+    protocol: TCP
+    targetPort: {{ .Values.omnidb_port }}
+  selector:
+    name: {{ .Values.omnidb_name }}
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
