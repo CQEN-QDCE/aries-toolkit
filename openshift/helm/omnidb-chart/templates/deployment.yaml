@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    template.alpha.openshift.io/wait-for-ready: "true"
+  labels:
+    app: {{ .Values.omnidb_name }}
+  name: {{ .Values.omnidb_name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: {{ .Values.omnidb_name }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        name: {{ .Values.omnidb_name }}
+    spec:
+      containers:
+      - name: {{ .Values.omnidb_name }}
+        image: taivokasper/omnidb:latest
+        imagePullPolicy: ""
+        ports:
+        - containerPort: {{ .Values.omnidb_port }}
+          protocol: TCP
+        securityContext:
+          privileged: false
+        terminationMessagePath: /dev/termination-log
+        volumeMounts:
+        - mountPath: /etc/omnidb
+          name: {{ .Values.omnidb_name }}-data
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      volumes:
+      - name: {{ .Values.omnidb_name }}-data
+        persistentVolumeClaim:
+          claimName: {{ .Values.omnidb_name }}-data
+status: {}
