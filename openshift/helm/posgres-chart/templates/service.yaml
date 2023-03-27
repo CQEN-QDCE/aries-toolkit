@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{ .Values.app_name }}{{ .Values.suffix }}
+    app-group: {{ .Values.app_group }}
+    app.kubernetes.io/part-of: {{ .Values.app_name }}{{ .Values.suffix }}
+    env: {{ .Values.env_name }}
+    name: {{ .Values.postgresql_name }}
+    role: {{ .Values.postgresql_role }}
+  name: {{ .Values.postgresql_name }}
+spec:
+  ports:
+  - name: "5432"
+    port: {{ .Values.postgresql_port }}
+    protocol: TCP
+    targetPort: {{ .Values.postgresql_port }}
+  selector:
+    name: {{ .Values.postgresql_name }}
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
