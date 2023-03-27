@@ -1,0 +1,3 @@
+description: Système de gestion de base de données relationnelle open source (RDBMS) développé à l'Université de Californie à Berkeley.
+name: ${APP_NAME}
+version: v0.0.1
