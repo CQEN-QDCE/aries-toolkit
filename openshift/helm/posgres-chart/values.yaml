@@ -1,0 +1,15 @@
+replicaCount: 1
+app_domain: apps.exp.openshift.cqen.ca
+app_subdomain: postgres
+app_group: postgres-database
+app_name: postgres-database
+env_name: development
+postgresql_admin_password: password
+postgresql_database_name: wallet
+postgresql_name: postgres-database
+postgresql_password: password
+postgresql_port: 5432
+postgresql_role: database
+postgresql_volume_size: 1Gi
+storage_class_name: gp2
+suffix:
