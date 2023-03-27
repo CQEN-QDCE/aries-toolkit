@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    template.alpha.openshift.io/wait-for-ready: "true"
+  labels:
+    app: {{ .Values.app_name }}{{ .Values.suffix }}
+    app-group: {{ .Values.app_group }}
+    app.kubernetes.io/part-of: {{ .Values.app_name }}{{ .Values.suffix }}
+    env: {{ .Values.env_name }}
+    name: {{ .Values.postgresql_name }}
+    role: {{ .Values.postgresql_role }}
+  name: {{ .Values.postgresql_name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: {{ .Values.postgresql_name }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        name: {{ .Values.postgresql_name }}
+    spec:
+      containers:
+      - env:
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              key: database-user
+              name: {{ .Values.postgresql_name }}
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: database-password
+              name: {{ .Values.postgresql_name }}
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              key: database-name
+              name: {{ .Values.postgresql_name }}
+        - name: POSTGRES_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: database-admin-password
+              name: {{ .Values.postgresql_name }}
+        image: 'postgres:latest'
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - /usr/libexec/check-container
+            - --live
+          initialDelaySeconds: 120
+          timeoutSeconds: 10
+        name: {{ .Values.postgresql_name }}
+        ports:
+        - containerPort: {{ .Values.postgresql_port }}
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - /usr/libexec/check-container
+          initialDelaySeconds: 5
+          timeoutSeconds: 1
+        securityContext:
+          capabilities: {}
+          privileged: false
+        terminationMessagePath: /dev/termination-log
+        volumeMounts:
+        - mountPath: /var/lib/pgsql/data
+          name: {{ .Values.postgresql_name }}-files
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      volumes:
+      - name: {{ .Values.postgresql_name }}-files
+        persistentVolumeClaim:
+          claimName: {{ .Values.postgresql_name }}-files
+status: {}
