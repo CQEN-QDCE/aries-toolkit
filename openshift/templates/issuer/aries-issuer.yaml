@@ -25,7 +25,7 @@ objects:
   spec:
     storageClassName: ${STORAGE_CLASS_NAME}
     accessModes:
-    - ReadWriteMany
+    - ${STORAGE_ACCESS_MODES}
     resources:
       requests:
         storage: ${TAILS_SERVER_VOLUME_SIZE}
@@ -66,6 +66,7 @@ objects:
       app: ${APP_GROUP}
       app.kubernetes.io/part-of: ${APP_GROUP}
       app-group: ${APP_GROUP}
+      app.kubernetes.io/managed-by: "yaml"
       role: tails
       env: ${ENV_NAME}
   spec:
@@ -171,7 +172,7 @@ objects:
   spec:
     storageClassName: ${STORAGE_CLASS_NAME}
     accessModes:
-    - ReadWriteMany
+    - ${STORAGE_ACCESS_MODES}
     resources:
       requests:
         storage: ${POSTGRESQL_VOLUME_SIZE}
@@ -212,6 +213,9 @@ objects:
       app: ${APP_GROUP}
       app.kubernetes.io/part-of: ${APP_GROUP}
       app-group: ${APP_GROUP}
+      app.kubernetes.io/runtime: postgresql
+      app.kubernetes.io/name: postgresql
+      app.kubernetes.io/managed-by: "yaml"
       role: wallet
       env: ${ENV_NAME}
   spec:
@@ -225,10 +229,10 @@ objects:
         - ${POSTGRESQL_NAME}
         from:
           kind: ImageStreamTag
-#          name: postgresql:latest
-#          namespace: openshift
-          name: ${POSTGRESQL_IMAGE}:${POSTGRESQL_TAG}
-          namespace: ${IMAGE_NAMESPACE}
+          name: postgresql:latest
+          namespace: openshift
+#          name: ${POSTGRESQL_IMAGE}:${POSTGRESQL_TAG}
+#          namespace: ${IMAGE_NAMESPACE}
         lastTriggeredImage: ''
     - type: ConfigChange
     replicas: 1
@@ -374,6 +378,9 @@ objects:
       app: ${APP_GROUP}
       app.kubernetes.io/part-of: ${APP_GROUP}
       app-group: ${APP_GROUP}
+      app.kubernetes.io/runtime: python
+      app.kubernetes.io/name: python
+      app.kubernetes.io/managed-by: "yaml"
       role: ${ROLE}
       env: ${ENV_NAME}
     annotations:
@@ -395,6 +402,9 @@ objects:
           app: ${APP_GROUP}
           app.kubernetes.io/part-of: ${APP_GROUP}
           app-group: ${APP_GROUP}
+          app.kubernetes.io/runtime: python
+          app.kubernetes.io/name: python
+          app.kubernetes.io/managed-by: "yaml"
           role: ${ROLE}
           env: ${ENV_NAME}
         annotations:
@@ -445,8 +455,9 @@ objects:
                 value: ${GENESIS_FILE_URL}
               - name: WEBHOOK_URL
                 value: ${WEBHOOK_URL}
+# le caractère underscore n'est pas accepté comme valeur pour le Wallet Name.
               - name: WALLET_NAME
-                value: ${POSTGRESQL_DATABASE_NAME}
+                value: ${APP_NAME}
               - name: WALLET_STORAGE_TYPE
                 value: ${WALLET_STORAGE_TYPE}
               - name: WALLET_STORAGE_CONFIGURATION
@@ -711,7 +722,7 @@ parameters:
   displayName: Application name
   description: Used to group components together in the OpenShift console.
   required: true
-  value: 'aries_issuer'
+  value: 'aries-issuer'
 - name: APP_GROUP
   displayName: App Group
   description: Used to group components together.
@@ -764,7 +775,7 @@ parameters:
   displayName: PostgreSQL database name
   description: Name of the PostgreSQL database.
   required: true
-  value: 'aries_issuer'
+  value: 'aries-issuer'
 - name: POSTGRESQL_PORT
   displayName: PostgreSql key management service port
   required: true
@@ -859,6 +870,10 @@ parameters:
   displayNgp2iption: The storage class of the volume.
   required: true
   value: 'gp2'
+- name: STORAGE_ACCESS_MODES
+  displayNgp2iption: The access mode for the storage class of the volume.
+  required: true
+  value: 'ReadWriteOnce'
 - name: TAILS_SERVER_VOLUME_SIZE
   displayName: Tails server volume size
   description: The size of the tails server persistent volume, e.g. 512Mi, 1Gi, 2Gi.
