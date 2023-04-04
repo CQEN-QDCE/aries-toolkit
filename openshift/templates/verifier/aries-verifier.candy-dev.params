@@ -1,7 +1,7 @@
 APP_DOMAIN=apps.exp.openshift.cqen.ca
 ACAPY_LABEL=Generic Aries Verifier
 WALLET_ENCRYPTION_KEY=
-GENESIS_FILE_URL=https://candy-dev.cloudcompass.ca/genesis
+GENESIS_FILE_URL=https://raw.githubusercontent.com/ICCS-ISAC/dtrust-reconu/main/CANdy/dev/pool_transactions_genesis
 POSTGRESQL_IMAGE=database
 POSTGRESQL_TAG=latest
 IMAGE_NAMESPACE=

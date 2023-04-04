@@ -3,4 +3,4 @@ ACAPY_LABEL=Generic Aries Issuer
 WALLET_ENCRYPTION_KEY=
 AGENT_DID=
 AGENT_DID_SEED=
-GENESIS_FILE_URL=https://candy-dev.cloudcompass.ca/genesis
+GENESIS_FILE_URL=https://raw.githubusercontent.com/ICCS-ISAC/dtrust-reconu/main/CANdy/dev/pool_transactions_genesis

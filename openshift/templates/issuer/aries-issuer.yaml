@@ -134,7 +134,7 @@ objects:
       role: tails
       env: ${ENV_NAME}
   spec:
-    host: ${TAILS_SERVER_SUBDOMAIN}.${APP_DOMAIN}
+    host: ${AGENT_SUBDOMAIN}-tails.${APP_DOMAIN}
     to:
       kind: Service
       name: ${TAILS_SERVER_NAME}
@@ -147,7 +147,7 @@ objects:
     wildcardPolicy: None
   status:
     ingress:
-      - host: ${APP_NAME}-tails.${APP_DOMAIN}
+      - host: ${AGENT_SUBDOMAIN}-tails.${APP_DOMAIN}
         routerName: default
         conditions:
           - type: Admitted
@@ -442,7 +442,7 @@ objects:
                 $([ ! -z "${WEBHOOK_URL}" ] && echo "--webhook-url ${WEBHOOK_URL}" || echo "")
                 $([ ! -z "${AGENT_DID_SEED}" ] && echo "--seed ${AGENT_DID_SEED}" || echo "")
                 $([ ! -z "${AGENT_ADMIN_API_KEY}" ] && echo "--admin-api-key ${AGENT_ADMIN_API_KEY}" || echo "--admin-insecure-mode")
-                --tails-server-base-url https://${TAILS_SERVER_SUBDOMAIN}.${APP_DOMAIN}
+                --tails-server-base-url https://${AGENT_SUBDOMAIN}-tails.${APP_DOMAIN}
                 --log-level ${AGENT_LOG_LEVEL});
             env:
               - name: ACAPY_LABEL
@@ -516,7 +516,7 @@ objects:
                 value: ${ACAPY_LABEL}
               - name: AGENT_LOG_LEVEL
                 value: ${LOG_LEVEL}
-            image: "bcgovimages/aries-cloudagent:py36-1.16-1_0.7.5"
+            image: "bcgovimages/aries-cloudagent:${AGENT_VERSION}"
             ports:
               - containerPort: ${{AGENT_ADMIN_PORT}}
                 protocol: TCP
@@ -750,10 +750,8 @@ parameters:
   description: The external subdomain to access Aries issuer.
   required: true
   value: 'aries-issuer'
-- name: TAILS_SERVER_SUBDOMAIN
-  description: The external subdomain to access tails server.
-  required: true
-  value: 'aries-issuer-tails'
+
+# ===============================================================================
 - name: POSTGRESQL_NAME
   displayName: PostgreSQL name
   description: The name assigned to all PostgreSQL objects defined in this template.
@@ -781,6 +779,18 @@ parameters:
   required: true
   description: The port number of the deployed PostgreSql database. Only used when WALLET_STORAGE_TYPE = postgres_storage.
   value: '5432'
+- name: POSTGRESQL_VOLUME_SIZE
+  displayName: PostgreSql volume size
+  description: The size of the PostgreSql persistent volume, e.g. 512Mi, 1Gi, 2Gi.
+  required: true
+  value: 1Gi
+
+# ===============================================================================
+- name: AGENT_VERSION
+  displayName: Agent Version
+  description: Agent version to deploy.
+  required: true
+  value: 'py36-1.16-1_0.7.5'
 - name: WALLET_STORAGE_TYPE
   displayName: Wallet storage type
   description: The wallet storage type. Possible values are 'postgres_storage' or 'sqlite_storage' at the moment.  If not defined, defaults to 'sqlite_storage' for compatibility.
@@ -879,11 +889,7 @@ parameters:
   description: The size of the tails server persistent volume, e.g. 512Mi, 1Gi, 2Gi.
   required: true
   value: 1Gi
-- name: POSTGRESQL_VOLUME_SIZE
-  displayName: PostgreSql volume size
-  description: The size of the PostgreSql persistent volume, e.g. 512Mi, 1Gi, 2Gi.
-  required: true
-  value: 1Gi
+
 # ===============================================================================
 - name: ROUTE_TIMEOUT
   displayName: Route Timeout

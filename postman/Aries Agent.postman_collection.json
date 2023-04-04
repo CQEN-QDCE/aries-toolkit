@@ -17,18 +17,9 @@
 					}
 				],
 				"url": {
-					"raw": "https://exp-port-e-issuer-flihp-agent-admin.apps.exp.openshift.cqen.ca/",
-					"protocol": "https",
+					"raw": "{{agentURL}}",
 					"host": [
-						"exp-port-e-issuer-flihp-agent-admin",
-						"apps",
-						"exp",
-						"openshift",
-						"cqen",
-						"ca"
-					],
-					"path": [
-						""
+						"{{agentURL}}"
 					]
 				}
 			},
@@ -65,15 +56,9 @@
 					"raw": "{\n  \"metadata\": {},\n  \"my_label\": \"Bob\",\n  \"recipient_keys\": [\n    \"H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV\"\n  ],\n  \"routing_keys\": [\n    \"H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV\"\n  ],\n  \"service_endpoint\": \"https://exp-port-e-issuer-flihp-agent.apps.exp.openshift.cqen.ca\"\n}"
 				},
 				"url": {
-					"raw": "https://exp-port-e-issuer-flihp-agent-admin.apps.exp.openshift.cqen.ca/connections/create-invitation?auto_accept=true&multi_use=true",
-					"protocol": "https",
+					"raw": "{{agentURL}}/connections/create-invitation?auto_accept=true&multi_use=true",
 					"host": [
-						"exp-port-e-issuer-flihp-agent-admin",
-						"apps",
-						"exp",
-						"openshift",
-						"cqen",
-						"ca"
+						"{{agentURL}}"
 					],
 					"path": [
 						"connections",
@@ -110,15 +95,9 @@
 					}
 				],
 				"url": {
-					"raw": "https://exp-port-e-issuer-flihp-agent-admin.apps.exp.openshift.cqen.ca/connections",
-					"protocol": "https",
+					"raw": "{{agentURL}}/connections",
 					"host": [
-						"exp-port-e-issuer-flihp-agent-admin",
-						"apps",
-						"exp",
-						"openshift",
-						"cqen",
-						"ca"
+						"{{agentURL}}"
 					],
 					"path": [
 						"connections"
@@ -149,15 +128,9 @@
 					}
 				],
 				"url": {
-					"raw": "https://exp-port-e-issuer-flihp-agent-admin.apps.exp.openshift.cqen.ca/schemas/created?schema_id={{schemaId}}",
-					"protocol": "https",
+					"raw": "{{agentURL}}/schemas/created",
 					"host": [
-						"exp-port-e-issuer-flihp-agent-admin",
-						"apps",
-						"exp",
-						"openshift",
-						"cqen",
-						"ca"
+						"{{agentURL}}"
 					],
 					"path": [
 						"schemas",
@@ -167,7 +140,8 @@
 						{
 							"key": "schema_id",
 							"value": "{{schemaId}}",
-							"description": "Ex: FUKLxsjrYSHgScLbHuPTo4%3A2%3ACQENDroitAccesVirtuel%3A0.1.3"
+							"description": "Ex: FUKLxsjrYSHgScLbHuPTo4%3A2%3ACQENDroitAccesVirtuel%3A0.1.3",
+							"disabled": true
 						},
 						{
 							"key": "schema_issuer_did",
@@ -214,15 +188,9 @@
 					}
 				],
 				"url": {
-					"raw": "https://exp-port-e-issuer-flihp-agent-admin.apps.exp.openshift.cqen.ca/credential-definitions/created?schema_name={{schemaName}}",
-					"protocol": "https",
+					"raw": "{{agentURL}}/credential-definitions/created",
 					"host": [
-						"exp-port-e-issuer-flihp-agent-admin",
-						"apps",
-						"exp",
-						"openshift",
-						"cqen",
-						"ca"
+						"{{agentURL}}"
 					],
 					"path": [
 						"credential-definitions",
@@ -256,78 +224,7 @@
 						{
 							"key": "schema_name",
 							"value": "{{schemaName}}",
-							"description": "Ex: CQENDroitAccesVirtuel"
-						},
-						{
-							"key": "schema_version",
-							"value": "{{schemaVersion}}",
-							"description": "Ex: 0.1.3",
-							"disabled": true
-						}
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Get_CredDef_Spécifique",
-			"protocolProfileBehavior": {
-				"disabledSystemHeaders": {
-					"accept": true
-				}
-			},
-			"request": {
-				"method": "GET",
-				"header": [
-					{
-						"key": "Accept",
-						"value": "application/json",
-						"type": "default"
-					},
-					{
-						"key": "X-Api-Key",
-						"value": "{{x-api-key}}",
-						"type": "default"
-					}
-				],
-				"url": {
-					"raw": "https://exp-port-e-issuer-flihp-agent-admin.apps.exp.openshift.cqen.ca/credential-definitions/{{credDefId}}",
-					"protocol": "https",
-					"host": [
-						"exp-port-e-issuer-flihp-agent-admin",
-						"apps",
-						"exp",
-						"openshift",
-						"cqen",
-						"ca"
-					],
-					"path": [
-						"credential-definitions",
-						"{{credDefId}}"
-					],
-					"query": [
-						{
-							"key": "cred_def_id",
-							"value": "{{credDefId}}",
-							"description": "Ex: FUKLxsjrYSHgScLbHuPTo4%3A3%3ACL%3A30599%3ARegistreAccesVirtuelCQEN",
-							"disabled": true
-						},
-						{
-							"key": "issuer_did",
-							"value": "{{issuerDid}}",
-							"description": "Ex: FUKLxsjrYSHgScLbHuPTo4",
-							"disabled": true
-						},
-						{
-							"key": "schema_id",
-							"value": "{{schemaId}}",
-							"description": "Ex: FUKLxsjrYSHgScLbHuPTo4%3A2%3ACQENDroitAccesVirtuel%3A0.1.3",
-							"disabled": true
-						},
-						{
-							"key": "schema_issuer_did",
-							"value": "{{schemaIssuerDid}}",
-							"description": "Ex: FUKLxsjrYSHgScLbHuPTo4",
+							"description": "Ex: CQENDroitAccesVirtuel",
 							"disabled": true
 						},
 						{
@@ -363,19 +260,79 @@
 					}
 				],
 				"url": {
-					"raw": "https://exp-port-e-issuer-flihp-agent-admin.apps.exp.openshift.cqen.ca/schemas/{{schemaId}}",
-					"protocol": "https",
+					"raw": "{{agentURL}}/schemas/{{schemaId}}",
 					"host": [
-						"exp-port-e-issuer-flihp-agent-admin",
-						"apps",
-						"exp",
-						"openshift",
-						"cqen",
-						"ca"
+						"{{agentURL}}"
 					],
 					"path": [
 						"schemas",
 						"{{schemaId}}"
+					],
+					"query": [
+						{
+							"key": "cred_def_id",
+							"value": "{{credDefId}}",
+							"description": "Ex: FUKLxsjrYSHgScLbHuPTo4%3A3%3ACL%3A30599%3ARegistreAccesVirtuelCQEN",
+							"disabled": true
+						},
+						{
+							"key": "issuer_did",
+							"value": "{{issuerDid}}",
+							"description": "Ex: FUKLxsjrYSHgScLbHuPTo4",
+							"disabled": true
+						},
+						{
+							"key": "schema_id",
+							"value": "{{schemaId}}",
+							"description": "Ex: FUKLxsjrYSHgScLbHuPTo4%3A2%3ACQENDroitAccesVirtuel%3A0.1.3",
+							"disabled": true
+						},
+						{
+							"key": "schema_issuer_did",
+							"value": "{{schemaIssuerDid}}",
+							"description": "Ex: FUKLxsjrYSHgScLbHuPTo4",
+							"disabled": true
+						},
+						{
+							"key": "schema_version",
+							"value": "{{schemaVersion}}",
+							"description": "Ex: 0.1.3",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get_CredDef_Spécifique",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"accept": true
+				}
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "default"
+					},
+					{
+						"key": "X-Api-Key",
+						"value": "{{x-api-key}}",
+						"type": "default"
+					}
+				],
+				"url": {
+					"raw": "{{agentURL}}/credential-definitions/{{credDefId}}",
+					"host": [
+						"{{agentURL}}"
+					],
+					"path": [
+						"credential-definitions",
+						"{{credDefId}}"
 					],
 					"query": [
 						{
@@ -435,15 +392,9 @@
 					}
 				],
 				"url": {
-					"raw": "https://exp-port-e-issuer-flihp-agent-admin.apps.exp.openshift.cqen.ca/revocation/active-registry/{{credDefId}}",
-					"protocol": "https",
+					"raw": "{{agentURL}}/revocation/active-registry/{{credDefId}}",
 					"host": [
-						"exp-port-e-issuer-flihp-agent-admin",
-						"apps",
-						"exp",
-						"openshift",
-						"cqen",
-						"ca"
+						"{{agentURL}}"
 					],
 					"path": [
 						"revocation",
@@ -518,15 +469,9 @@
 					"raw": "{\n  \"attributes\": [\n    \"email\",\n    \"time\"\n  ],\n  \"schema_name\": \"CQENDroitAccesVirtuel\",\n  \"schema_version\": \"0.1.5\"\n}"
 				},
 				"url": {
-					"raw": "https://exp-port-e-issuer-flihp-agent-admin.apps.exp.openshift.cqen.ca/schemas",
-					"protocol": "https",
+					"raw": "{{agentURL}}/schemas",
 					"host": [
-						"exp-port-e-issuer-flihp-agent-admin",
-						"apps",
-						"exp",
-						"openshift",
-						"cqen",
-						"ca"
+						"{{agentURL}}"
 					],
 					"path": [
 						"schemas"
@@ -558,7 +503,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"revocation_registry_size\": 10000,\n  \"schema_id\": \"FUKLxsjrYSHgScLbHuPTo4:2:CQENDroitAccesVirtuel:0.1\",\n  \"support_revocation\": true,\n  \"tag\": \"RegistreAccesVirtuelCQEN_0,1\"\n}",
+					"raw": "{\n  \"revocation_registry_size\": 10000,\n  \"schema_id\": \"FUKLxsjrYSHgScLbHuPTo4:2:CQENDroitAccesVirtuel:0.1\",\n  \"support_revocation\": \"true\",\n  \"tag\": \"RegistreAccesVirtuelCQEN_0,1\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -566,15 +511,9 @@
 					}
 				},
 				"url": {
-					"raw": "https://exp-port-e-issuer-flihp-agent-admin.apps.exp.openshift.cqen.ca/credential-definitions",
-					"protocol": "https",
+					"raw": "{{agentURL}}/credential-definitions",
 					"host": [
-						"exp-port-e-issuer-flihp-agent-admin",
-						"apps",
-						"exp",
-						"openshift",
-						"cqen",
-						"ca"
+						"{{agentURL}}"
 					],
 					"path": [
 						"credential-definitions"
@@ -631,6 +570,11 @@
 		},
 		{
 			"key": "x-api-key",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "agentURL",
 			"value": "",
 			"type": "default"
 		}
