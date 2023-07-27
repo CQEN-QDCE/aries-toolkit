@@ -229,7 +229,7 @@ objects:
         - ${POSTGRESQL_NAME}
         from:
           kind: ImageStreamTag
-          name: postgresql:latest
+          name: postgresql:10-el8
           namespace: openshift
 #          name: ${POSTGRESQL_IMAGE}:${POSTGRESQL_TAG}
 #          namespace: ${IMAGE_NAMESPACE}
@@ -249,19 +249,19 @@ objects:
           ports:
           - containerPort: ${{POSTGRESQL_PORT}}
             protocol: TCP
-          readinessProbe:
-            initialDelaySeconds: 5
-            timeoutSeconds: 1
-            periodSeconds: 10
-            successThreshold: 1
-            failureThreshold: 3
-            exec:
-              command:
-                - /bin/sh
-                - -i
-                - -c
-                - psql -h 127.0.0.1 -U $POSTGRESQL_USER -q -d $POSTGRESQL_DATABASE
-                  -c 'SELECT 1'
+#          readinessProbe:
+#            initialDelaySeconds: 5
+#            timeoutSeconds: 1
+#            periodSeconds: 10
+#            successThreshold: 1
+#            failureThreshold: 3
+#            exec:
+#              command:
+#                - /bin/sh
+#                - -i
+#                - -c
+#                - psql -h 127.0.0.1 -U $POSTGRESQL_USER -q -d $POSTGRESQL_DATABASE
+#                  -c 'SELECT 1'
           livenessProbe:
             tcpSocket:
               port: 5432
@@ -271,21 +271,21 @@ objects:
             successThreshold: 1
             failureThreshold: 3
           env:
-          - name: POSTGRESQL_USER
-            valueFrom:
-              secretKeyRef:
-                name: ${POSTGRESQL_NAME}
-                key: database-user
-          - name: POSTGRESQL_PASSWORD
-            valueFrom:
-              secretKeyRef:
-                name: ${POSTGRESQL_NAME}
-                key: database-password
-          - name: POSTGRESQL_DATABASE
-            valueFrom:
-              secretKeyRef:
-                name: ${POSTGRESQL_NAME}
-                key: database-name
+#          - name: POSTGRESQL_USER
+#            valueFrom:
+#              secretKeyRef:
+#                name: ${POSTGRESQL_NAME}
+#                key: database-user
+#          - name: POSTGRESQL_PASSWORD
+#            valueFrom:
+#              secretKeyRef:
+#                name: ${POSTGRESQL_NAME}
+#                key: database-password
+#          - name: POSTGRESQL_DATABASE
+#            valueFrom:
+#              secretKeyRef:
+#                name: ${POSTGRESQL_NAME}
+#                key: database-name
           - name: POSTGRESQL_ADMIN_PASSWORD
             valueFrom:
               secretKeyRef:
@@ -424,15 +424,9 @@ objects:
                 --admin 0.0.0.0 ${ADMIN_INTERFACE_PORT}
                 --endpoint https://${AGENT_SUBDOMAIN}.${APP_DOMAIN}
                 --genesis-url "${GENESIS_FILE_URL}"
+                --auto-accept-invites
                 --auto-accept-requests
-                --auto-respond-messages
-                --auto-respond-credential-proposal
-                --auto-respond-credential-offer
-                --auto-respond-credential-request
-                --auto-respond-presentation-proposal
-                --auto-respond-presentation-request
                 --auto-provision
-                --auto-store-credential
                 --wallet-type '${WALLET_TYPE}'
                 --wallet-name "$(echo ${WALLET_NAME} | tr '[:upper:]' '[:lower:]' | sed "s~-~_~g")"
                 --wallet-key "${WALLET_ENCRYPTION_KEY}"
@@ -522,22 +516,22 @@ objects:
                 protocol: TCP
               - containerPort: ${{AGENT_HTTP_PORT}}
                 protocol: TCP
-            readinessProbe:
-              timeoutSeconds: 30
-              initialDelaySeconds: 3
-              exec:
-                command:
-                  - bash
-                  - "-c"
-                  - 'curl --fail "http://localhost:${ADMIN_INTERFACE_PORT}/status/ready" -H "X-API-KEY: ${ADMIN_API_KEY}"'
-            livenessProbe:
-              timeoutSeconds: 30
-              initialDelaySeconds: 300
-              exec:
-                command:
-                  - bash
-                  - "-c"
-                  - 'curl --fail "http://localhost:${ADMIN_INTERFACE_PORT}/status/live" -H "X-API-KEY: ${ADMIN_API_KEY}"'
+#            readinessProbe:
+#              timeoutSeconds: 30
+#              initialDelaySeconds: 3
+#              exec:
+#                command:
+#                  - bash
+#                  - "-c"
+#                  - 'curl --fail "http://localhost:${ADMIN_INTERFACE_PORT}/status/ready" -H "X-API-KEY: ${ADMIN_API_KEY}"'
+#            livenessProbe:
+#              timeoutSeconds: 30
+#              initialDelaySeconds: 300
+#              exec:
+#                command:
+#                  - bash
+#                  - "-c"
+#                  - 'curl --fail "http://localhost:${ADMIN_INTERFACE_PORT}/status/live" -H "X-API-KEY: ${ADMIN_API_KEY}"'
             resources: {}
             terminationMessagePath: /dev/termination-log
             terminationMessagePolicy: File
@@ -671,17 +665,27 @@ objects:
       role: wallet
       env: ${ENV_NAME}
     annotations:
+      template.openshift.io/expose-database-hostname: "{.data['database-hostname']}"
+      template.openshift.io/expose-database-name: "{.data['database-name']}"
+      template.openshift.io/expose-database-port: "{.data['database-port']}"
       template.openshift.io/expose-database-user: "{.data['database-user']}"
       template.openshift.io/expose-database-password: "{.data['database-password']}"
       template.openshift.io/expose-database-admin-user: "{.data['database-admin-user']}"
       template.openshift.io/expose-database-admin-password: "{.data['database-admin-password']}"
-      template.openshift.io/expose-database-name: "{.data['database-name']}"
+      template.openshift.io/expose-database-connectionstring: "{.data['database-connectionstring']}"
+      template.openshift.io/expose-database-volume-claim-name: "{.data['database-volume-claim-name']}"
+      template.openshift.io/expose-database-storage-class-name: "{.data['database-storage-class-name']}"
   stringData:
-    database-user: "dbuser"
+    database-hostname: ${POSTGRESQL_NAME}
+    database-port: ${POSTGRESQL_PORT}
+    database-name: "${POSTGRESQL_DATABASE_NAME}"
+    database-user: ${POSTGRESQL_USER}
     database-password: "${POSTGRESQL_PASSWORD}"
     database-admin-user: "postgres"
     database-admin-password: "${POSTGRESQL_ADMIN_PASSWORD}"
-    database-name: "${POSTGRESQL_DATABASE_NAME}"
+    database-connectionstring: Host=${POSTGRESQL_NAME};Port=${POSTGRESQL_PORT};Database=${POSTGRESQL_NAME};Username=${POSTGRESQL_USER};Password=${POSTGRESQL_PASSWORD};
+    database-volume-claim-name: ${POSTGRESQL_NAME}-files
+    database-storage-class-name: ${STORAGE_CLASS_NAME}
   type: Opaque
 
 - kind: Secret
@@ -757,6 +761,13 @@ parameters:
   description: The name assigned to all PostgreSQL objects defined in this template.
   required: true
   value: 'postgres-database'
+- name: POSTGRESQL_USER
+  displayName: PostgreSQL Connection Username
+  description: Username for PostgreSQL user that will be used for accessing the
+    database.  Needs to be basee64 encoded/
+  required: true
+  generate: expression
+  value: 'dbuser'
 - name: POSTGRESQL_PASSWORD
   displayName: PostgreSQL connection password
   description: Password for the PostgreSQL connection user. Needs to be basee64 encoded.
@@ -829,7 +840,8 @@ parameters:
   displayName: Wallet storage credentials
   required: true
   description: The wallet storage credentials.
-  value: '{\"account\":\"${POSTGRESQL_USER}\",\"password\":\"${POSTGRESQL_PASSWORD}\",\"admin_account\":\"${POSTGRESQL_ADMIN_USER}\",\"admin_password\":\"${POSTGRESQL_ADMIN_PASSWORD}\"}'
+  value: '{\"account\":\"${POSTGRESQL_ADMIN_USER}\",\"password\":\"${POSTGRESQL_ADMIN_PASSWORD}\",\"admin_account\":\"${POSTGRESQL_ADMIN_USER}\",\"admin_password\":\"${POSTGRESQL_ADMIN_PASSWORD}\"}'
+#  value: '{\"account\":\"${POSTGRESQL_USER}\",\"password\":\"${POSTGRESQL_PASSWORD}\",\"admin_account\":\"${POSTGRESQL_ADMIN_USER}\",\"admin_password\":\"${POSTGRESQL_ADMIN_PASSWORD}\"}'
 - name: ACAPY_NAME
   displayName: ACA-Py name
   description: The name assigned to all ACA-Py objects defined in this template.
