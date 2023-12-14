@@ -53,7 +53,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"metadata\": {},\n  \"my_label\": \"Bob\",\n  \"recipient_keys\": [\n    \"H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV\"\n  ],\n  \"routing_keys\": [\n    \"H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV\"\n  ],\n  \"service_endpoint\": \"https://exp-port-e-issuer-flihp-agent.apps.exp.openshift.cqen.ca\"\n}"
+					"raw": "{\n  \"metadata\": {},\n  \"my_label\": \"Bob\",\n  \"recipient_keys\": [\n    \"H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV\"\n  ],\n  \"routing_keys\": [\n    \"H3C2AVvLMv6gmMNam3uVAjZpfkcJCwDwnZn6z3wXmqPV\"\n  ],\n  \"service_endpoint\": \"https://exp-port-e-issuer-agent.apps.exp.openshift.cqen.ca\"\n}"
 				},
 				"url": {
 					"raw": "{{agentURL}}/connections/create-invitation?auto_accept=true&multi_use=true",
